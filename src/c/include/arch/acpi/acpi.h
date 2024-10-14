@@ -55,7 +55,7 @@ struct ARC_RSDTBaseEntry {
 
 int acpi_checksum(void *data, size_t length);
 
-size_t acpi_get_madt(uint8_t **out);
+size_t acpi_get_table(const char *id, uint8_t **out);
 
 int init_acpi();
 

@@ -39,6 +39,8 @@
 #include <lib/resource.h>
 #include <drivers/dri_defs.h>
 
+#include <arch/pci/pci.h>
+
 #ifdef ARC_TARGET_ARCH_X86_64
 #include <arch/x86-64/gdt.h>
 #include <arch/x86-64/idt.h>
@@ -99,6 +101,7 @@ int init_arch() {
 	vfs_mount("/initramfs/", Arc_InitramfsRes);
 
         init_acpi();
+	init_pci();
 
 #ifdef ARC_TARGET_ARCH_X86_64
         if (init_apic() != 0) {

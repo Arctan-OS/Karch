@@ -43,12 +43,11 @@ int acpi_checksum(void *data, size_t length) {
 	return sum;
 }
 
-size_t acpi_get_madt(uint8_t **out) {
-	(void)out;
-
+size_t acpi_get_table(const char *id, uint8_t **out) {
 	uacpi_table table = { 0 };
 	int r = 0;
-	if ((r = uacpi_table_find_by_signature("APIC", &table)) != UACPI_STATUS_OK) {
+
+	if ((r = uacpi_table_find_by_signature(id, &table)) != UACPI_STATUS_OK) {
 		ARC_DEBUG(ERR, "Failed to get table %d\n");
 		return -1;
 	}

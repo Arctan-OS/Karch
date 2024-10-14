@@ -6,6 +6,7 @@
 #include <lib/atomics.h>
 #include <mp/sched/abstract.h>
 #include <lib/util.h>
+#include <arch/pci/pci.h>
 
 /*
  * Convenience initialization/deinitialization hooks that will be called by
@@ -46,7 +47,6 @@ uacpi_status uacpi_kernel_get_rsdp(uacpi_phys_addr *out_rsdp_address) {
  */
 uacpi_status uacpi_kernel_raw_memory_read(uacpi_phys_addr address, uacpi_u8 byte_width, uacpi_u64 *out_value) {
 	uintptr_t virtual = ARC_PHYS_TO_HHDM(address);
-	ARC_DEBUG(INFO, "RAW MEM READ\n");
 	switch (byte_width) {
 		case 1: {
 			*(uint8_t *)out_value = *(uint8_t *)virtual;
@@ -75,7 +75,6 @@ uacpi_status uacpi_kernel_raw_memory_read(uacpi_phys_addr address, uacpi_u8 byte
 }
 uacpi_status uacpi_kernel_raw_memory_write(uacpi_phys_addr address, uacpi_u8 byte_width, uacpi_u64 in_value) {
 	uintptr_t virtual = ARC_PHYS_TO_HHDM(address);
-	ARC_DEBUG(INFO, "RAW MEM WRITE\n");
 	switch (byte_width) {
 		case 1: {
 			*(uint8_t *)virtual = *(uint8_t *)in_value;
@@ -110,9 +109,9 @@ uacpi_status uacpi_kernel_raw_memory_write(uacpi_phys_addr address, uacpi_u8 byt
  * be of the exact width.
  */
 uacpi_status uacpi_kernel_raw_io_read(uacpi_io_addr address, uacpi_u8 byte_width, uacpi_u64 *out_value) {
-	ARC_DEBUG(INFO, "RAW IO READ\n");
 	switch (byte_width) {
 		case 1: {
+
 			return UACPI_STATUS_OK;
 		}
 
@@ -135,7 +134,6 @@ uacpi_status uacpi_kernel_raw_io_read(uacpi_io_addr address, uacpi_u8 byte_width
 }
 
 uacpi_status uacpi_kernel_raw_io_write(uacpi_io_addr address, uacpi_u8 byte_width, uacpi_u64 in_value) {
-	ARC_DEBUG(INFO, "RAW IO WRITE\n");
 	switch (byte_width) {
 		case 1: {
 			return UACPI_STATUS_OK;
@@ -168,13 +166,29 @@ uacpi_status uacpi_kernel_raw_io_write(uacpi_io_addr address, uacpi_u8 byte_widt
  * byte.
  */
 uacpi_status uacpi_kernel_pci_read(uacpi_pci_address *address, uacpi_size offset, uacpi_u8 byte_width, uacpi_u64 *value) {
-	ARC_DEBUG(INFO, "Reading PCI\n");
+	uint32_t read = pci_read(address->segment, address->bus, address->device, address->function, offset);
+
+	switch (byte_width) {
+		case 1: {
+			*value = read & UINT8_MAX;
+			return UACPI_STATUS_OK;
+		}
+		case 2: {
+			*value = read & UINT16_MAX;
+			return UACPI_STATUS_OK;
+		}
+		case 4: {
+			*value = read;
+			return UACPI_STATUS_OK;
+		}
+	}
+
 	return UACPI_STATUS_OK;
 }
 
 uacpi_status uacpi_kernel_pci_write(uacpi_pci_address *address, uacpi_size offset, uacpi_u8 byte_width, uacpi_u64 value) {
-	ARC_DEBUG(INFO, "Writing PCI\n");
-	return UACPI_STATUS_OK;
+	int r = pci_write(address->segment, address->bus, address->device, address->function, offset, byte_width, value);
+	return (r == 0 ? UACPI_STATUS_OK : UACPI_STATUS_DENIED);
 }
 
 /*
