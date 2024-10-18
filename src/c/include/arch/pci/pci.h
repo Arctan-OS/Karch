@@ -31,9 +31,20 @@
 #include <stddef.h>
 #include <global.h>
 
+#define ARC_BAR_IS_IOSPACE(__bar) ((__bar & 1) == 1)
+#define ARC_IOBAR_ADDR(__bar) ((__bar >> 2) & 0x3FFFFFFF)
+#define ARC_BAR_IS_MEMSPACE(__bar) ((__bar & 1) == 0)
+#define ARC_MEMBAR_TYPE(__bar) ((__bar >> 1) & 0b11)
+#define ARC_MEMBAR_PREFETCHABLE(__bar) ((__bar >> 3) & 1)
+#define ARC_MEMBAR_ADDR(__bar) ((__bar >> 4) & 0xFFFFFFF)
+
 struct ARC_PCIHdrCommon {
-	uint16_t vendor;
-	uint16_t device;
+	// The segment, bus, and device from the called function
+	uint64_t configuration_information; // 15:0 - Bus segment
+					    // 23:16 - Bus
+					    // 31:24 - Device
+	uint16_t vendor_id;
+	uint16_t device_id;
 	uint16_t command;
 	uint16_t status;
 	uint8_t revision;
@@ -45,7 +56,7 @@ struct ARC_PCIHdrCommon {
 	uint8_t header_type;
 	uint8_t bist;
 }__attribute__((packed));
-STATIC_ASSERT(sizeof(struct ARC_PCIHdrCommon) == 0x10, "PCI Common Header wrong length");
+STATIC_ASSERT(sizeof(struct ARC_PCIHdrCommon) == 0x10 + 0x8, "PCI Common Header wrong length");
 
 struct ARC_PCIHdr0 {
 	struct ARC_PCIHdrCommon common;
@@ -67,7 +78,7 @@ struct ARC_PCIHdr0 {
 	uint8_t mint_grant;
 	uint8_t max_latency;
 }__attribute__((packed));
-STATIC_ASSERT(sizeof(struct ARC_PCIHdr0) == 0x40, "PCI Header 1 wrong length");
+STATIC_ASSERT(sizeof(struct ARC_PCIHdr0) == 0x40 + 0x8, "PCI Header 1 wrong length");
 
 struct ARC_PCIHdr1 {
 	struct ARC_PCIHdrCommon common;
@@ -95,7 +106,7 @@ struct ARC_PCIHdr1 {
 	uint8_t interrupt_pin;
 	uint16_t bridge_ctrl;
 }__attribute__((packed));
-STATIC_ASSERT(sizeof(struct ARC_PCIHdr1) == 0x40, "PCI Header 1 wrong length");
+STATIC_ASSERT(sizeof(struct ARC_PCIHdr1) == 0x40 + 0x8, "PCI Header 1 wrong length");
 
 struct ARC_PCIHdr2 {
 	struct ARC_PCIHdrCommon common;
@@ -122,14 +133,18 @@ struct ARC_PCIHdr2 {
 	uint16_t subsys_vendor;
 	uint32_t legacy_mode_base;
 }__attribute__((packed));
-STATIC_ASSERT(sizeof(struct ARC_PCIHdr2) == 0x48, "PCI Header 2 wrong length");
+STATIC_ASSERT(sizeof(struct ARC_PCIHdr2) == 0x48 + 0x8, "PCI Header 2 wrong length");
 
 int pci_write(uint16_t segment, uint8_t bus, uint8_t device, uint8_t function, size_t offset, uint8_t byte_width, uint32_t value);
 uint32_t pci_read(uint16_t segment, uint8_t bus, uint8_t device, uint8_t function, size_t offset);
 
+int pci_read_common_header(uint16_t segment, uint8_t bus, uint8_t device, struct ARC_PCIHdrCommon *common);
+int pci_read_header_type0(uint16_t segment, uint8_t bus, uint8_t device, struct ARC_PCIHdr0 *header);
+int pci_read_header_type1(uint16_t segment, uint8_t bus, uint8_t device, struct ARC_PCIHdr1 *header);
+int pci_read_header_type2(uint16_t segment, uint8_t bus, uint8_t device, struct ARC_PCIHdr2 *header);
+
 uint16_t pci_get_status(uint16_t segment, uint8_t bus, uint8_t device);
 int pci_set_command(uint16_t segment, uint8_t bus, uint8_t device, uint16_t command);
-
 
 int init_pci();
 

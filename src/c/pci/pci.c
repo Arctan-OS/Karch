@@ -125,13 +125,15 @@ static inline uint8_t pci_get_header_type(uint16_t segment, uint8_t bus, uint8_t
 	return (pci_read(segment, bus, device, 0, 0xC) >> 16) & 0xFF;
 }
 
-static int pci_read_common_header(uint16_t segment, uint8_t bus, uint8_t device, struct ARC_PCIHdrCommon *common) {
+int pci_read_common_header(uint16_t segment, uint8_t bus, uint8_t device, struct ARC_PCIHdrCommon *common) {
+	common->configuration_information = segment | (bus << 16) | (device << 24);
+
 	uint32_t r0 = pci_get_vendor_device(segment, bus, device);
 	uint32_t r2 = pci_read(segment, bus, device, 0, 0x8);
 	uint32_t r3 = pci_read(segment, bus, device, 0, 0xC);
 
-	common->vendor = r0 & 0xFFFF;
-	common->device = (r0 >> 16) & 0xFFFF;
+	common->vendor_id = r0 & 0xFFFF;
+	common->device_id = (r0 >> 16) & 0xFFFF;
 	common->status = pci_get_status(segment, bus, device);
 	common->revision = r2 & 0xFF;
 	common->prog_if = (r2 >> 8) & 0xFF;
@@ -145,7 +147,7 @@ static int pci_read_common_header(uint16_t segment, uint8_t bus, uint8_t device,
 	return 0;
 }
 
-static int pci_read_header_type0(uint16_t segment, uint8_t bus, uint8_t device, struct ARC_PCIHdr0 *header) {
+int pci_read_header_type0(uint16_t segment, uint8_t bus, uint8_t device, struct ARC_PCIHdr0 *header) {
 	pci_read_common_header(segment, bus, device, &header->common);
 
 	header->bar0 = pci_read(segment, bus, device, 0, 0x10);
@@ -175,7 +177,7 @@ static int pci_read_header_type0(uint16_t segment, uint8_t bus, uint8_t device, 
 	return 0;
 }
 
-static int pci_read_header_type1(uint16_t segment, uint8_t bus, uint8_t device, struct ARC_PCIHdr1 *header) {
+int pci_read_header_type1(uint16_t segment, uint8_t bus, uint8_t device, struct ARC_PCIHdr1 *header) {
 	pci_read_common_header(segment, bus, device, &header->common);
 
 	header->bar0 = pci_read(segment, bus, device, 0, 0x10);
@@ -225,7 +227,7 @@ static int pci_read_header_type1(uint16_t segment, uint8_t bus, uint8_t device, 
 	return 0;
 }
 
-static int pci_read_header_type2(uint16_t segment, uint8_t bus, uint8_t device, struct ARC_PCIHdr2 *header) {
+int pci_read_header_type2(uint16_t segment, uint8_t bus, uint8_t device, struct ARC_PCIHdr2 *header) {
 	pci_read_common_header(segment, bus, device, &header->common);
 
 	header->carbus_exca_base = pci_read(segment, bus, device, 0, 0x10);
