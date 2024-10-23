@@ -101,7 +101,6 @@ int init_arch() {
 	vfs_mount("/initramfs/", Arc_InitramfsRes);
 
         init_acpi();
-	init_pci();
 
 #ifdef ARC_TARGET_ARCH_X86_64
         if (init_apic() != 0) {
@@ -111,6 +110,8 @@ int init_arch() {
 	__asm__("sti");
 	init_syscall();
 #endif
+
+	init_pci();
 
 	vfs_link("/initramfs/boot/ANTIQUE.F14", "/font.fnt", -1);
 	vfs_rename("/font.fnt", "/fonts/font.fnt");
