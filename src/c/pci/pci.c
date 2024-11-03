@@ -125,148 +125,23 @@ static inline uint8_t pci_get_header_type(uint16_t segment, uint8_t bus, uint8_t
 	return (pci_read(segment, bus, device, 0, 0xC) >> 16) & 0xFF;
 }
 
-int pci_read_common_header(uint16_t segment, uint8_t bus, uint8_t device, struct ARC_PCIHdrCommon *common) {
-	common->configuration_information = segment | (bus << 16) | (device << 24);
+struct ARC_PCIHeader *pci_read_header(uint16_t segment, uint8_t bus, uint8_t device) {
+	struct ARC_PCIHeader *header = NULL;
+	uint32_t *data = (uint32_t *)alloc(sizeof(*header));
 
-	uint32_t r0 = pci_get_vendor_device(segment, bus, device);
-	uint32_t r2 = pci_read(segment, bus, device, 0, 0x8);
-	uint32_t r3 = pci_read(segment, bus, device, 0, 0xC);
+	if (data == NULL) {
+		return NULL;
+	}
 
-	common->vendor_id = r0 & 0xFFFF;
-	common->device_id = (r0 >> 16) & 0xFFFF;
-	common->status = pci_get_status(segment, bus, device);
-	common->revision = r2 & 0xFF;
-	common->prog_if = (r2 >> 8) & 0xFF;
-	common->subclass = (r2 >> 16) & 0xFF;
-	common->class = (r2 >> 24) & 0xFF;
-	common->cahce_line_size = r3 & 0xFF;
-	common->latency = (r3 >> 8) & 0xFF;
-	common->header_type = (r3 >> 16) & 0xFF;
-	common->bist = (r3 >> 24) & 0xFF;
+	header = (struct ARC_PCIHeader *)data;
 
-	return 0;
-}
+	for (size_t i = sizeof(header->info); i < sizeof(*header); i += 4) {
+		data[i / 4] = pci_read(segment, bus, device, 0, i - 4);
+	}
 
-int pci_read_header_type0(uint16_t segment, uint8_t bus, uint8_t device, struct ARC_PCIHdr0 *header) {
-	pci_read_common_header(segment, bus, device, &header->common);
+	header->info.call = segment | (bus << 16) | (device << 24);
 
-	header->bar0 = pci_read(segment, bus, device, 0, 0x10);
-	header->bar1 = pci_read(segment, bus, device, 0, 0x14);
-	header->bar2 = pci_read(segment, bus, device, 0, 0x18);
-	header->bar3 = pci_read(segment, bus, device, 0, 0x1C);
-	header->bar4 = pci_read(segment, bus, device, 0, 0x20);
-	header->bar5 = pci_read(segment, bus, device, 0, 0x24);
-	header->cis_ptr = pci_read(segment, bus, device, 0, 0x28);
-
-	uint32_t r11 = pci_read(segment, bus, device, 0, 0x2C);
-
-	header->subsystem_vendor = r11 & 0xFFFF;
-	header->subsystem_id = (r11 >> 16) & 0xFFFF;
-
-	header->rom_base = pci_read(segment, bus, device, 0, 0x30);
-
-	header->capabilities_ptr = pci_read(segment, bus, device, 0, 0x34) & 0xFF;
-
-	uint32_t r15 = pci_read(segment, bus, device, 0, 0x3C);
-
-	header->interrupt_line = r15 & 0xFF;
-	header->interrupt_pin = (r15 >> 8) & 0xFF;
-	header->mint_grant = (r15 >> 16) & 0xFF;
-	header->max_latency = (r15 >> 24) & 0xFF;
-
-	return 0;
-}
-
-int pci_read_header_type1(uint16_t segment, uint8_t bus, uint8_t device, struct ARC_PCIHdr1 *header) {
-	pci_read_common_header(segment, bus, device, &header->common);
-
-	header->bar0 = pci_read(segment, bus, device, 0, 0x10);
-	header->bar1 = pci_read(segment, bus, device, 0, 0x14);
-
-	uint32_t r6 = pci_read(segment, bus, device, 0, 0x18);
-
-	header->primary_bus = r6 & 0xFF;
-	header->secondary_bus = (r6 >> 8) & 0xFF;
-	header->subordinate_bus = (r6 >> 16) & 0xFF;
-	header->secondary_latency_timer = (r6 >> 24) & 0xFF;
-
-	uint32_t r7 = pci_read(segment, bus, device, 0, 0x1C);
-
-	header->io_base = r7 & 0xFF;
-	header->io_limit = (r7 >> 8) & 0xFF;
-	header->secondary_stat = (r7 >> 16) & 0xFFFF;
-
-	uint32_t r8 = pci_read(segment, bus, device, 0, 0x20);
-
-	header->mem_base = r8 & 0xFFFF;
-	header->mem_limit = (r8 >> 16) & 0xFFFF;
-
-	uint32_t r9 = pci_read(segment, bus, device, 0, 0x24);
-
-	header->prefetch_mem_base = r9 & 0xFFFF;
-	header->prefetch_mem_limit = (r9 >> 16) & 0xFFFF;
-
-	header->prefetch_base_upper = pci_read(segment, bus, device, 0, 0x28);
-	header->prefetch_limit_upper = pci_read(segment, bus, device, 0, 0x2C);
-
-	uint32_t r12 = pci_read(segment, bus, device, 0, 0x30);
-
-	header->io_base_upper = r12 & 0xFFFF;
-	header->io_limit_upper = (r12 >> 16) & 0xFFFF;
-
-	header->capability_ptr = pci_read(segment, bus, device, 0, 0x34) & 0xFF;
-
-	header->rom_base = pci_read(segment, bus, device, 0, 0x38);
-
-	uint32_t r15 = pci_read(segment, bus, device, 0, 0x3C);
-
-	header->interrupt_line = r15 & 0xFF;
-	header->interrupt_pin = (r15 >> 8) & 0xFF;
-	header->bridge_ctrl = (r15 >> 16) & 0xFFFF;
-
-	return 0;
-}
-
-int pci_read_header_type2(uint16_t segment, uint8_t bus, uint8_t device, struct ARC_PCIHdr2 *header) {
-	pci_read_common_header(segment, bus, device, &header->common);
-
-	header->carbus_exca_base = pci_read(segment, bus, device, 0, 0x10);
-
-	uint32_t r5 = pci_read(segment, bus, device, 0, 0x14);
-
-	header->caps_list_off = r5 & 0xFF;
-	header->secondary_stat = (r5 >> 16) & 0xFFFF;
-
-	uint32_t r6 = pci_read(segment, bus, device, 0, 0x18);
-
-	header->pci_bus = r6 & 0xFF;
-	header->cardbus = (r6 >> 8) & 0xFF;
-	header->subordinate_bus = (r6 >> 16) & 0xFF;
-	header->cardbus_latency_timer = (r6 >> 24) & 0xFF;
-
-	header->mem0_base = pci_read(segment, bus, device, 0, 0x1C);
-	header->mem0_limit = pci_read(segment, bus, device, 0, 0x20);
-	header->mem1_base = pci_read(segment, bus, device, 0, 0x24);
-	header->mem1_limit = pci_read(segment, bus, device, 0, 0x28);
-	header->io0_base = pci_read(segment, bus, device, 0, 0x2C);
-	header->io0_limit = pci_read(segment, bus, device, 0, 0x30);
-	header->io1_base = pci_read(segment, bus, device, 0, 0x34);
-	header->io1_limit = pci_read(segment, bus, device, 0, 0x38);
-
-	uint32_t r15 = pci_read(segment, bus, device, 0, 0x3C);
-
-	header->interrupt_line = r15 & 0xFF;
-	header->interrupt_pin = (r15 >> 8) & 0xFF;
-	header->bridge_ctrl = (r15 >> 16) & 0xFFFF;
-
-	uint32_t r16 = pci_read(segment, bus, device, 0, 0x40);
-
-	header->subsys_device = r16 & 0xFFFF;
-	header->subsys_vendor = (r16 >> 16) & 0xFFFF;
-
-	header->legacy_mode_base = pci_read(segment, bus, device, 0, 0x44);
-
-	return 0;
+	return header;
 }
 
 static int pci_enumerate() {
@@ -279,30 +154,9 @@ static int pci_enumerate() {
 			continue;
 		}
 
-		void *args = NULL;
+		struct ARC_PCIHeader *header = pci_read_header(0, 0, i);
 
-		switch (pci_get_header_type(0, 0, i)) {
-			case 0: {
-				args = alloc(sizeof(struct ARC_PCIHdr0));
-				pci_read_header_type0(0, 0, i, args);
-
-				break;
-			}
-			case 1: {
-				args = alloc(sizeof(struct ARC_PCIHdr1));
-				pci_read_header_type1(0, 0, i, args);
-
-				break;
-			}
-			case 2: {
-				args = alloc(sizeof(struct ARC_PCIHdr2));
-				pci_read_header_type2(0, 0, i, args);
-
-				break;
-			}
-		}
-
-		init_pci_resource_at("/dev/", vendor_device & 0xFFFF, (vendor_device >> 16) & 0xFFFF, args);
+		init_pci_resource_at("/dev/", vendor_device & 0xFFFF, (vendor_device >> 16) & 0xFFFF, header);
 	}
 
 	return 0;
