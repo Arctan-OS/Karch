@@ -156,7 +156,7 @@ static int pci_enumerate() {
 
 		struct ARC_PCIHeader *header = pci_read_header(0, 0, i);
 
-		init_pci_resource_at("/dev/", vendor_device & 0xFFFF, (vendor_device >> 16) & 0xFFFF, header);
+		init_pci_resource(vendor_device & 0xFFFF, (vendor_device >> 16) & 0xFFFF, header);
 	}
 
 	return 0;
