@@ -114,8 +114,9 @@ int init_arch() {
 	init_pci();
 
 	vfs_link("/initramfs/boot/ANTIQUE.F14", "/font.fnt", -1);
-	vfs_rename("/font.fnt", "/fonts/font.fnt");
-	vfs_open("/fonts/font.fnt", 0, ARC_STD_PERM, (void *)&Arc_FontFile);
+//	vfs_rename("/font.fnt", "/fonts/font.fnt");
+//	vfs_open("/fonts/font.fnt", 0, ARC_STD_PERM, (void *)&Arc_FontFile);
+	vfs_open("/font.fnt", 0, ARC_STD_PERM, &Arc_FontFile);
 
 	return 0;
 }
