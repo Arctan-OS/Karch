@@ -94,8 +94,13 @@ int init_arch() {
 
 	init_vfs();
 
-	vfs_create("/initramfs/", ARC_STD_PERM, ARC_VFS_N_DIR, NULL);
-        vfs_create("/dev/", ARC_STD_PERM, ARC_VFS_N_DIR, NULL);
+	struct ARC_VFSNodeInfo info = {
+	        .type = ARC_VFS_N_DIR,
+		.mode = ARC_STD_PERM,
+        };
+
+	vfs_create("/initramfs/", &info);
+        vfs_create("/dev/", &info);
 
 	Arc_InitramfsRes = init_resource(0, ARC_SDRI_INITRAMFS, (void *)ARC_PHYS_TO_HHDM(Arc_BootMeta->initramfs));
 	vfs_mount("/initramfs/", Arc_InitramfsRes);
@@ -114,9 +119,8 @@ int init_arch() {
 	init_pci();
 
 	vfs_link("/initramfs/boot/ANTIQUE.F14", "/font.fnt", -1);
-//	vfs_rename("/font.fnt", "/fonts/font.fnt");
-//	vfs_open("/fonts/font.fnt", 0, ARC_STD_PERM, (void *)&Arc_FontFile);
-	vfs_open("/font.fnt", 0, ARC_STD_PERM, &Arc_FontFile);
+	vfs_rename("/font.fnt", "/fonts/font.fnt");
+	vfs_open("/fonts/font.fnt", 0, ARC_STD_PERM, (void *)&Arc_FontFile);
 
 	return 0;
 }
