@@ -200,6 +200,7 @@ uacpi_status uacpi_kernel_io_map(uacpi_io_addr base, uacpi_size len, uacpi_handl
 	*out_handle = (void *)base;
 	return UACPI_STATUS_OK;
 }
+
 void uacpi_kernel_io_unmap(uacpi_handle handle) {
 	ARC_DEBUG(INFO, "IO UNMAP\n");
 	return;
@@ -224,13 +225,11 @@ uacpi_status uacpi_kernel_io_write(uacpi_handle handle, uacpi_size offset, uacpi
 }
 
 void *uacpi_kernel_map(uacpi_phys_addr addr, uacpi_size len) {
-	ARC_DEBUG(INFO, "Mapping is useless if you have the back of your hand (%"PRIx64" -> %"PRIx64" %lu)\n", addr, ARC_PHYS_TO_HHDM(addr), len);
 	(void)len;
 	return (void *)ARC_PHYS_TO_HHDM(addr);
 }
 
 void uacpi_kernel_unmap(void *addr, uacpi_size len) {
-	ARC_DEBUG(ERR, "You cannot unmap the back of your hand (%"PRIx64" %lu)\n", addr, len);
 	(void)addr;
 	(void)len;
 }
@@ -277,7 +276,7 @@ void uacpi_kernel_free(void *mem) {
 	}
 
 	if (free(mem) != mem) {
-		ARC_DEBUG(INFO, "Freeing %p\n", mem);
+		ARC_DEBUG(ERR, "Freeing %p\n", mem);
 	}
 }
 #else
