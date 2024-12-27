@@ -74,11 +74,11 @@ int pci_write(uint16_t segment, uint8_t bus, uint8_t device, uint8_t function, s
 
 	switch (byte_width) {
 		case 1: {
-			outb(0xCFC + offset & 0b11, (value & 0xFF));
+			outb(0xCFC + (offset & 0b11), (value & 0xFF));
 			break;
 		}
 		case 2: {
-			outw(0xCFC + offset & 0b10, (value & 0xFFFF));
+			outw(0xCFC + (offset & 0b10), (value & 0xFFFF));
 			break;
 		}
 		case 4: {

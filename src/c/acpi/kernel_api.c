@@ -109,6 +109,9 @@ uacpi_status uacpi_kernel_raw_memory_write(uacpi_phys_addr address, uacpi_u8 byt
  * be of the exact width.
  */
 uacpi_status uacpi_kernel_raw_io_read(uacpi_io_addr address, uacpi_u8 byte_width, uacpi_u64 *out_value) {
+	(void)address;
+	(void)out_value;
+
 	switch (byte_width) {
 		case 1: {
 
@@ -134,6 +137,9 @@ uacpi_status uacpi_kernel_raw_io_read(uacpi_io_addr address, uacpi_u8 byte_width
 }
 
 uacpi_status uacpi_kernel_raw_io_write(uacpi_io_addr address, uacpi_u8 byte_width, uacpi_u64 in_value) {
+	(void)address;
+	(void)in_value;
+
 	switch (byte_width) {
 		case 1: {
 			return UACPI_STATUS_OK;
@@ -196,12 +202,14 @@ uacpi_status uacpi_kernel_pci_write(uacpi_pci_address *address, uacpi_size offse
  * handle that can be used for reading and writing the IO range.
  */
 uacpi_status uacpi_kernel_io_map(uacpi_io_addr base, uacpi_size len, uacpi_handle *out_handle) {
+	(void)len;
 	ARC_DEBUG(INFO, "IO MAP\n");
 	*out_handle = (void *)base;
 	return UACPI_STATUS_OK;
 }
 
 void uacpi_kernel_io_unmap(uacpi_handle handle) {
+	(void)handle;
 	ARC_DEBUG(INFO, "IO UNMAP\n");
 	return;
 }
@@ -216,10 +224,18 @@ void uacpi_kernel_io_unmap(uacpi_handle handle) {
  * be of the exact width.
  */
 uacpi_status uacpi_kernel_io_read(uacpi_handle handle, uacpi_size offset, uacpi_u8 byte_width, uacpi_u64 *value) {
+	(void)handle;
+	(void)offset;
+	(void)byte_width;
+	(void)value;
 	ARC_DEBUG(INFO, "IO READ\n");
 	return UACPI_STATUS_OK;
 }
 uacpi_status uacpi_kernel_io_write(uacpi_handle handle, uacpi_size offset, uacpi_u8 byte_width, uacpi_u64 value) {
+	(void)handle;
+	(void)offset;
+	(void)byte_width;
+	(void)value;
 	ARC_DEBUG(INFO, "IO WRITE\n");
 	return UACPI_STATUS_OK;
 }
@@ -328,6 +344,7 @@ uacpi_u64 uacpi_kernel_get_ticks(void) {
  * Spin for N microseconds.
  */
 void uacpi_kernel_stall(uacpi_u8 usec) {
+	(void)usec;
 	ARC_DEBUG(INFO, "Not stalling\n");
 	return;
 }
@@ -336,6 +353,7 @@ void uacpi_kernel_stall(uacpi_u8 usec) {
  * Sleep for N milliseconds.
  */
 void uacpi_kernel_sleep(uacpi_u64 msec) {
+	(void)msec;
 	ARC_DEBUG(INFO, "Not sleeping\n");
 	return;
 }
@@ -405,6 +423,8 @@ void uacpi_kernel_release_mutex(uacpi_handle handle) {
  * A successful wait is indicated by returning UACPI_TRUE.
  */
 uacpi_bool uacpi_kernel_wait_for_event(uacpi_handle handle, uacpi_u16 timeout) {
+	(void)handle;
+	(void)timeout;
 	ARC_DEBUG(INFO, "Waiting for event\n");
 	return 0;
 }
@@ -415,6 +435,7 @@ uacpi_bool uacpi_kernel_wait_for_event(uacpi_handle handle, uacpi_u16 timeout) {
  * This function may be used in interrupt contexts.
  */
 void uacpi_kernel_signal_event(uacpi_handle handle) {
+	(void)handle;
 	ARC_DEBUG(INFO, "Signalling\n");
 	return;
 }
@@ -423,6 +444,7 @@ void uacpi_kernel_signal_event(uacpi_handle handle) {
  * Reset the event counter to 0.
  */
 void uacpi_kernel_reset_event(uacpi_handle handle) {
+	(void)handle;
 	ARC_DEBUG(INFO, "Reseting event\n");
 	return;
 }
@@ -433,6 +455,7 @@ void uacpi_kernel_reset_event(uacpi_handle handle) {
  * Currently either a Breakpoint or Fatal operators.
  */
 uacpi_status uacpi_kernel_handle_firmware_request(uacpi_firmware_request *req) {
+	(void)req;
 	ARC_DEBUG(INFO, "Handling firmware request\n");
 	return UACPI_STATUS_OK;
 }
@@ -445,6 +468,9 @@ uacpi_status uacpi_kernel_handle_firmware_request(uacpi_firmware_request *req) {
  * refer to this handler from other API.
  */
 uacpi_status uacpi_kernel_install_interrupt_handler(uacpi_u32 irq, uacpi_interrupt_handler handler, uacpi_handle ctx, uacpi_handle *out_irq_handle) {
+	(void)handler;
+	(void)ctx;
+	(void)out_irq_handle;
 	ARC_DEBUG(INFO, "Installing IRQ handler for %d\n", irq);
 	return UACPI_STATUS_OK;
 }
@@ -454,6 +480,8 @@ uacpi_status uacpi_kernel_install_interrupt_handler(uacpi_u32 irq, uacpi_interru
  * 'out_irq_handle' during installation.
  */
 uacpi_status uacpi_kernel_uninstall_interrupt_handler(uacpi_interrupt_handler handler, uacpi_handle irq_handle) {
+	(void)handler;
+	(void)irq_handle;
 	ARC_DEBUG(INFO, "Uninstalling IRQ\n");
 	return UACPI_STATUS_OK;
 }
@@ -493,9 +521,13 @@ uacpi_cpu_flags uacpi_kernel_lock_spinlock(uacpi_handle handle) {
 	if (spinlock_lock((ARC_GenericSpinlock *)handle) != 0) {
 		ARC_DEBUG(ERR, "Failed to lock spinlock\n");
 	}
+
+	// TODO: RFLAGS need to be returned here, figure it out
+	return 0;
 }
 
 void uacpi_kernel_unlock_spinlock(uacpi_handle handle, uacpi_cpu_flags flags) {
+	(void)flags;
 	if (spinlock_unlock((ARC_GenericSpinlock *)handle) != 0) {
 		ARC_DEBUG(ERR, "Failed to unlock spinlock\n");
 	}
@@ -506,6 +538,9 @@ void uacpi_kernel_unlock_spinlock(uacpi_handle handle, uacpi_cpu_flags flags) {
  * Might be invoked from an interrupt context.
  */
 uacpi_status uacpi_kernel_schedule_work(uacpi_work_type type, uacpi_work_handler handler, uacpi_handle ctx) {
+	(void)type;
+	(void)handler;
+	(void)ctx;
 	ARC_DEBUG(INFO, "Schedule work\n");
 	return UACPI_STATUS_OK;
 }

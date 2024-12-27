@@ -48,7 +48,7 @@ size_t acpi_get_table(const char *id, uint8_t **out) {
 	int r = 0;
 
 	if ((r = uacpi_table_find_by_signature(id, &table)) != UACPI_STATUS_OK) {
-		ARC_DEBUG(ERR, "Failed to get table %d\n");
+		ARC_DEBUG(ERR, "Failed to get table (%d)\n", r);
 		return -1;
 	}
 
