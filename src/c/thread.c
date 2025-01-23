@@ -40,10 +40,14 @@ struct ARC_Thread *thread_create(void *page_tables, void *entry, size_t mem_size
 
 	if (thread == NULL) {
 		ARC_DEBUG(ERR, "Failed to allocate thread\n");
-		return  NULL;
+		return NULL;
 	}
 
+	memset(thread, 0, sizeof(*thread));
+
 	void *mem = (void *)0x1000; // TODO: Change this depending on thread
+
+	pager_fly_map(page_tables, (uintptr_t)mem, mem_size, (1 << ARC_PAGER_RW) | (1 << ARC_PAGER_NX) | (1 << ARC_PAGER_US));
 
 	if (mem == NULL) {
 		free(thread);
@@ -53,9 +57,15 @@ struct ARC_Thread *thread_create(void *page_tables, void *entry, size_t mem_size
 
 	init_static_spinlock(&thread->lock);
 
+#ifdef ARC_TARGET_ARCH_X86_64
 	thread->ctx.rip = (uintptr_t)entry;
+	thread->ctx.cs = 0x18;
+	thread->ctx.ss = 0x20;
 	thread->ctx.rbp = (uintptr_t)mem + mem_size - 8;
 	thread->ctx.rsp = thread->ctx.rbp;
+#endif
+
+	ARC_DEBUG(INFO, "Created thread\n");
 
 	return thread;
 }

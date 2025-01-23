@@ -30,6 +30,10 @@
 #include <lib/util.h>
 #include <loaders/elf.h>
 #include <lib/perms.h>
+#include <arch/smp.h>
+#include <arch/x86-64/ctrl_regs.h>
+#include <mm/pmm.h>
+#include <arch/pager.h>
 
 #define DEFAULT_MEMSIZE 0x1000 * 64
 
@@ -54,7 +58,7 @@ struct ARC_Process *process_create(char *filepath, int priority) {
 
 	memset(process, 0, sizeof(*process));
 
-	void *page_tables = alloc(PAGE_SIZE); // Allocate new top level page table
+	void *page_tables = pmm_alloc(); // Allocate new top level page table
 	void *entry = load_elf(page_tables, file);
 
 	struct ARC_Thread *main = thread_create(page_tables, entry, DEFAULT_MEMSIZE);
@@ -65,9 +69,14 @@ struct ARC_Process *process_create(char *filepath, int priority) {
 		return NULL;
 	}
 
+	pager_clone(page_tables, (uintptr_t)&__KERNEL_START__, (uintptr_t)&__KERNEL_START__,
+		    ((uintptr_t)&__KERNEL_END__ - (uintptr_t)&__KERNEL_START__));
+
 	process->threads = main;
 	process->page_tables = page_tables;
 	process->priority = priority;
+
+	ARC_DEBUG(INFO, "Created process\n");
 
 	return process;
 }
@@ -90,6 +99,16 @@ int process_delete(struct ARC_Process *process) {
 	}
 
 	ARC_DEBUG(ERR, "Implement\n");
+
+	return 0;
+}
+
+int process_switch(struct ARC_Process *to) {
+	struct ARC_ProcessorDescriptor *proc = Arc_BootProcessor;
+
+	smp_context_write(proc, &to->threads->ctx);
+	_x86_CR3 = (uintptr_t)ARC_HHDM_TO_PHYS(to->page_tables);
+	_x86_setCR3();
 
 	return 0;
 }
