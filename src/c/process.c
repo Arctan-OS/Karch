@@ -104,11 +104,16 @@ int process_delete(struct ARC_Process *process) {
 }
 
 int process_switch(struct ARC_Process *to) {
-	struct ARC_ProcessorDescriptor *proc = Arc_BootProcessor;
+	register uint64_t rip = to->threads->ctx.rip;
+	register uint64_t rsp = to->threads->ctx.rbp;
+	register uint64_t rbp = to->threads->ctx.rsp;
 
-	smp_context_write(proc, &to->threads->ctx);
-	_x86_CR3 = (uintptr_t)ARC_HHDM_TO_PHYS(to->page_tables);
+	_x86_CR3 = ARC_HHDM_TO_PHYS(to->page_tables);
 	_x86_setCR3();
+	__asm__("mov rcx, %0" : :"a"(rip) :);
+	__asm__("mov rbp, %0" : :"a"(rbp) :);
+	__asm__("mov rsp, %0" : :"a"(rsp) :);
+	__asm__("sysretq");
 
 	return 0;
 }
