@@ -72,6 +72,8 @@ struct ARC_Process *process_create(char *filepath, int priority) {
 	pager_clone(page_tables, (uintptr_t)&__KERNEL_START__, (uintptr_t)&__KERNEL_START__,
 		    ((uintptr_t)&__KERNEL_END__ - (uintptr_t)&__KERNEL_START__));
 
+	pager_clone(page_tables, ARC_HHDM_VADDR, ARC_HHDM_VADDR, 0xFFFFFFFFFFFFFFF);
+
 	process->threads = main;
 	process->page_tables = page_tables;
 	process->priority = priority;

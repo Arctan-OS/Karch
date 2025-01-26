@@ -39,6 +39,7 @@
 #endif
 
 struct ARC_GenericProcessorDescriptor {
+	void *pl0_stack;
 	uint32_t processor;
 	uint32_t acpi_uid;
 	uint32_t acpi_flags;
@@ -59,6 +60,6 @@ struct ARC_GenericProcessorDescriptor {
 	uint32_t timer_ticks;
 	uint32_t timer_mode;
 	ARC_GenericMutex timer_lock;
-};
+}__attribute__((packed));
 
 #endif

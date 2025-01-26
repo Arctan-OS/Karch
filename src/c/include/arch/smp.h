@@ -31,6 +31,7 @@
 
 #include <stdint.h>
 #include <lib/atomics.h>
+#include <config.h>
 
 #ifdef ARC_TARGET_ARCH_X86_64
 #include <arch/x86-64/apic/lapic.h>
@@ -39,7 +40,7 @@
 
 // NOTE: The index in Arc_ProcessorList corresponds to the ID
 //       acquired from get_processor_id();
-extern struct ARC_ProcessorDescriptor Arc_ProcessorList[256];
+extern struct ARC_ProcessorDescriptor Arc_ProcessorList[ARC_MAX_PROCESSORS];
 // NOTE: Since the processor structure includes a next pointer,
 //       this allows us to also traverse the list by processor,
 //       while still being able to address the list by processor ID

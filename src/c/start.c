@@ -44,9 +44,13 @@
 #ifdef ARC_TARGET_ARCH_X86_64
 #include <arch/x86-64/gdt.h>
 #include <arch/x86-64/idt.h>
-#include <arch/x86-64/sse.h>
 #include <arch/x86-64/syscall.h>
 #include <arch/x86-64/apic/apic.h>
+
+#ifdef ARC_TARGET_ARCH_X86_64
+uintptr_t Arc_MainPL0Stack = 0;
+#endif
+
 #endif
 
 int init_arch() {
@@ -88,7 +92,7 @@ int init_arch() {
 	}
 
 #ifdef ARC_TARGET_ARCH_X86_64
-	init_gdt();
+	Arc_MainPL0Stack = init_gdt();
 	init_idt();
 #endif
 
