@@ -57,8 +57,18 @@
 #define ARC_PAGER_PAT_WT  4 // WT
 #define ARC_PAGER_PAT_WP  5 // WP
 
-#ifdef ARC_TARGET_ARCH_X86_64
-#include <arch/x86-64/pager.h>
-#endif
+#include <stdint.h>
+#include <stddef.h>
+
+extern uintptr_t Arc_KernelPageTables;
+
+int pager_map(void *page_tables, uintptr_t virtual, uintptr_t physical, size_t size, uint32_t attributes) ;
+int pager_unmap(void *page_tables, uintptr_t virtual, size_t size);
+int pager_fly_map(void *page_tables, uintptr_t virtual, size_t size, uint32_t attributes);
+int pager_fly_unmap(void *page_tables, uintptr_t virtual, size_t size);
+int pager_set_attr(void *page_tables, uintptr_t virtual, size_t size, uint32_t attributes);
+int pager_clone(void *page_tables, uintptr_t virt_src, uintptr_t virt_dest, size_t size);
+uintptr_t pager_switch_to_kpages();
+int init_pager();
 
 #endif

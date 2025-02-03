@@ -30,6 +30,7 @@
 #include <stdint.h>
 #include <global.h>
 #include <mm/allocator.h>
+#include <arch/io/port.h>
 
 #define PCI_GET_FUNCTION_BASE(segment, bus, device, function)
 

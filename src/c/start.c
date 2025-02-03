@@ -46,12 +46,8 @@
 #include <arch/x86-64/idt.h>
 #include <arch/x86-64/syscall.h>
 #include <arch/x86-64/apic/apic.h>
-
-#ifdef ARC_TARGET_ARCH_X86_64
-uintptr_t Arc_MainPL0Stack = 0;
 #endif
 
-#endif
 
 int init_arch() {
 	if (init_pmm((struct ARC_MMap *)Arc_BootMeta->arc_mmap, Arc_BootMeta->arc_mmap_len) != 0) {
@@ -91,11 +87,6 @@ int init_arch() {
 		ARC_HANG;
 	}
 
-#ifdef ARC_TARGET_ARCH_X86_64
-	Arc_MainPL0Stack = init_gdt();
-	init_idt();
-#endif
-
 	init_vfs();
 
 	struct ARC_VFSNodeInfo info = {
@@ -116,8 +107,9 @@ int init_arch() {
 		ARC_DEBUG(ERR, "Failed to initialize interrupts\n");
 		ARC_HANG;
 	}
+	// NOTE: IDT and GDT are initialized here, everything prior needs to execute perfectly
+	//       or a triple fault will happen.
 	__asm__("sti");
-	init_syscall();
 #endif
 
 	init_pci();

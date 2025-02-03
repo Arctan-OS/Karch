@@ -37,7 +37,7 @@
 
 #define DEFAULT_MEMSIZE 0x1000 * 64
 
-struct ARC_Process *process_create(char *filepath, int priority) {
+struct ARC_Process *process_create(char *filepath) {
 	if (filepath == NULL) {
 		ARC_DEBUG(ERR, "Failed to create process, no file given\n");
 		return NULL;
@@ -72,11 +72,9 @@ struct ARC_Process *process_create(char *filepath, int priority) {
 	pager_clone(page_tables, (uintptr_t)&__KERNEL_START__, (uintptr_t)&__KERNEL_START__,
 		    ((uintptr_t)&__KERNEL_END__ - (uintptr_t)&__KERNEL_START__));
 
-	pager_clone(page_tables, ARC_HHDM_VADDR, ARC_HHDM_VADDR, 0xFFFFFFFFFFFFFFF);
-
 	process->threads = main;
+	process->nextex = main;
 	process->page_tables = page_tables;
-	process->priority = priority;
 
 	ARC_DEBUG(INFO, "Created process\n");
 
@@ -105,17 +103,36 @@ int process_delete(struct ARC_Process *process) {
 	return 0;
 }
 
+/*
+**
+// NOTE: On x86-64 systems this is only called during an interrupt.
+//       Interrupts are disabled on syscalls, therefore the worry of
+//       returning to different segments is non-existent.
 int process_switch(struct ARC_Process *to) {
-	register uint64_t rip = to->threads->ctx.rip;
-	register uint64_t rsp = to->threads->ctx.rbp;
-	register uint64_t rbp = to->threads->ctx.rsp;
+	if (to == NULL) {
+		ARC_DEBUG(ERR, "Cannot switch to NULL process\n");
+		return -1;
+	}
 
-	_x86_CR3 = ARC_HHDM_TO_PHYS(to->page_tables);
-	_x86_setCR3();
-	__asm__("mov rcx, %0" : :"a"(rip) :);
-	__asm__("mov rbp, %0" : :"a"(rbp) :);
-	__asm__("mov rsp, %0" : :"a"(rsp) :);
-	__asm__("sysretq");
+	struct ARC_ProcessorDescriptor *desc = smp_get_proc_desc();
+	struct ARC_ProcessorDescriptor *current_desc = desc->generic.next;
+	struct ARC_Thread *thread = to->nextex;
+	struct ARC_Thread *current_thread = thread->next;
+
+	for (uint32_t i = 0; (i < Arc_ProcessorCounter - 1 && thread != NULL); i++) {
+		if (current_thread == NULL) {
+			current_thread = to->threads;
+		}
+
+		smp_context_write(current_desc, &current_thread->ctx);
+		current_thread = current_thread->next;
+		current_desc = current_desc->generic.next;
+	}
+
+	if (thread != NULL) {
+		smp_context_write(desc, &thread->ctx);
+	}
 
 	return 0;
 }
+ */

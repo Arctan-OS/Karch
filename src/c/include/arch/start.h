@@ -30,10 +30,6 @@
 
 #include <stdint.h>
 
-#ifdef ARC_TARGET_ARCH_X86_64
-extern uintptr_t Arc_MainPL0Stack;
-#endif
-
 int init_arch();
 
 #endif

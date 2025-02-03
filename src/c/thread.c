@@ -59,8 +59,8 @@ struct ARC_Thread *thread_create(void *page_tables, void *entry, size_t mem_size
 
 #ifdef ARC_TARGET_ARCH_X86_64
 	thread->ctx.rip = (uintptr_t)entry;
-	thread->ctx.cs = 0x18;
-	thread->ctx.ss = 0x20;
+	thread->ctx.cs = 0x23;
+	thread->ctx.ss = 0x1b;
 	thread->ctx.rbp = (uintptr_t)mem + mem_size - 8;
 	thread->ctx.rsp = thread->ctx.rbp;
 #endif

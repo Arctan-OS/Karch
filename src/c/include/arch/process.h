@@ -32,14 +32,15 @@
 #include <arch/thread.h>
 
 struct ARC_Process {
+	struct ARC_Thread *threads;
+	struct ARC_Thread *nextex;
 	void *page_tables;
 	void *base;
 	size_t size;
 	int priority;
-	struct ARC_Thread *threads;
 };
 
-struct ARC_Process *process_create(char *filepath, int priority);
+struct ARC_Process *process_create(char *filepath);
 int process_fork(struct ARC_Process *process);
 int process_delete(struct ARC_Process *process);
 int process_switch(struct ARC_Process *to);
