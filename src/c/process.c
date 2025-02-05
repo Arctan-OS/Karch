@@ -76,6 +76,8 @@ struct ARC_Process *process_create(char *filepath) {
 	process->nextex = main;
 	process->page_tables = page_tables;
 
+	init_static_spinlock(&process->thread_lock);
+
 	ARC_DEBUG(INFO, "Created process\n");
 
 	return process;
@@ -103,36 +105,23 @@ int process_delete(struct ARC_Process *process) {
 	return 0;
 }
 
-/*
-**
-// NOTE: On x86-64 systems this is only called during an interrupt.
-//       Interrupts are disabled on syscalls, therefore the worry of
-//       returning to different segments is non-existent.
-int process_switch(struct ARC_Process *to) {
-	if (to == NULL) {
-		ARC_DEBUG(ERR, "Cannot switch to NULL process\n");
-		return -1;
+struct ARC_Thread *process_get_next_thread(struct ARC_Process *process, struct ARC_Thread *current) {
+	if (process == NULL) {
+		ARC_DEBUG(ERR, "Cannot get next thread of NULL process\n");
+		return NULL;
 	}
 
-	struct ARC_ProcessorDescriptor *desc = smp_get_proc_desc();
-	struct ARC_ProcessorDescriptor *current_desc = desc->generic.next;
-	struct ARC_Thread *thread = to->nextex;
-	struct ARC_Thread *current_thread = thread->next;
+	struct ARC_Thread *ret = NULL;
+	spinlock_lock(&process->thread_lock);
+	ret = process->nextex;
 
-	for (uint32_t i = 0; (i < Arc_ProcessorCounter - 1 && thread != NULL); i++) {
-		if (current_thread == NULL) {
-			current_thread = to->threads;
-		}
-
-		smp_context_write(current_desc, &current_thread->ctx);
-		current_thread = current_thread->next;
-		current_desc = current_desc->generic.next;
+	if (ret == NULL || ret == current) {
+		spinlock_unlock(&process->thread_lock);
+		return NULL;
 	}
 
-	if (thread != NULL) {
-		smp_context_write(desc, &thread->ctx);
-	}
+	process->nextex = ret->next;
+	spinlock_unlock(&process->thread_lock);
 
-	return 0;
+	return ret;
 }
- */

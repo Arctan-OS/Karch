@@ -38,11 +38,12 @@ struct ARC_Process {
 	void *base;
 	size_t size;
 	int priority;
+	ARC_GenericSpinlock thread_lock;
 };
 
 struct ARC_Process *process_create(char *filepath);
 int process_fork(struct ARC_Process *process);
 int process_delete(struct ARC_Process *process);
-int process_switch(struct ARC_Process *to);
+struct ARC_Thread *process_get_next_thread(struct ARC_Process *process, struct ARC_Thread *current);
 
 #endif

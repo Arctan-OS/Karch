@@ -44,6 +44,8 @@
 #include <arch/x86-64/context.h>
 #include <lib/atomics.h>
 #include <stdarg.h>
+#include <arch/thread.h>
+#include <arch/process.h>
 
 #ifdef ARC_TARGET_ARCH_X86_64
 #include <arch/x86-64/apic/lapic.h>
@@ -54,7 +56,6 @@ struct ARC_ProcessorDescriptor {
 	struct ARC_ProcessorDescriptor *next;
 	struct ARC_Thread *last_thread;
 	struct ARC_Thread *current_thread;
-	struct ARC_Thread *next_thread;
 	uint32_t acpi_uid;
 	uint32_t acpi_flags;
 	uint32_t flags;
