@@ -4,7 +4,7 @@
 #include <mm/allocator.h>
 #include <arch/pager.h>
 #include <lib/atomics.h>
-#include <mp/sched/abstract.h>
+#include <mp/scheduler.h>
 #include <lib/util.h>
 #include <arch/pci/pci.h>
 
@@ -398,7 +398,7 @@ void uacpi_kernel_free_event(uacpi_handle handle) {
  */
 uacpi_thread_id uacpi_kernel_get_thread_id(void) {
 	ARC_DEBUG(INFO, "TID\n");
-	return (uacpi_thread_id)get_current_tid();
+	return (uacpi_thread_id)sched_get_current_tid();
 }
 
 /*

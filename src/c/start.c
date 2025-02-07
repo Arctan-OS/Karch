@@ -55,6 +55,10 @@ int init_arch() {
 		ARC_HANG;
 	}
 
+	// TODO: Should allocate a section of memory here to be controlled by a buddy allocator.
+	//       This way the system can still do O(1) single page allocations, but also do O(log N) or
+	//       O(N log N) power with base 2 contiguous allocations.
+
 	if (init_pager() != 0) {
 		ARC_DEBUG(ERR, "Failed to initialize architectural pager\n");
 		ARC_HANG;
