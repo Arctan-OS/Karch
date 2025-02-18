@@ -105,17 +105,19 @@ int process_delete(struct ARC_Process *process) {
 	return 0;
 }
 
-struct ARC_Thread *process_get_next_thread(struct ARC_Process *process, struct ARC_Thread *current) {
+struct ARC_Thread *process_get_next_thread(struct ARC_Process *process) {
 	if (process == NULL) {
 		ARC_DEBUG(ERR, "Cannot get next thread of NULL process\n");
 		return NULL;
 	}
 
 	struct ARC_Thread *ret = NULL;
+	struct ARC_ProcessorDescriptor *processor = smp_get_proc_desc();
+
 	spinlock_lock(&process->thread_lock);
 	ret = process->nextex;
 
-	if (ret == NULL || ret == current) {
+	if (ret == NULL || ret == processor->current_thread) {
 		spinlock_unlock(&process->thread_lock);
 		return NULL;
 	}

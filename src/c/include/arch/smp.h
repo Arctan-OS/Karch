@@ -56,6 +56,7 @@ struct ARC_ProcessorDescriptor {
 	struct ARC_ProcessorDescriptor *next;
 	struct ARC_Thread *last_thread;
 	struct ARC_Thread *current_thread;
+	struct ARC_Process *current_process;
 	uint32_t acpi_uid;
 	uint32_t acpi_flags;
 	uint32_t flags;

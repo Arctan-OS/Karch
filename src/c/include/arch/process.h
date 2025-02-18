@@ -44,6 +44,6 @@ struct ARC_Process {
 struct ARC_Process *process_create(char *filepath);
 int process_fork(struct ARC_Process *process);
 int process_delete(struct ARC_Process *process);
-struct ARC_Thread *process_get_next_thread(struct ARC_Process *process, struct ARC_Thread *current);
+struct ARC_Thread *process_get_next_thread(struct ARC_Process *process);
 
 #endif
