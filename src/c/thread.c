@@ -31,7 +31,7 @@
 #include <lib/util.h>
 
 struct ARC_Thread *thread_create(void *page_tables, void *entry, size_t mem_size) {
-	if (entry == NULL || mem_size == 0) {
+	if (entry == NULL) {
 		ARC_DEBUG(ERR, "Failed to create thread, improper parameters (%p %lu)\n", entry, mem_size);
 		return NULL;
 	}
@@ -59,8 +59,8 @@ struct ARC_Thread *thread_create(void *page_tables, void *entry, size_t mem_size
 
 #ifdef ARC_TARGET_ARCH_X86_64
 	thread->ctx.rip = (uintptr_t)entry;
-	thread->ctx.cs = 0x23;
-	thread->ctx.ss = 0x1b;
+	thread->ctx.cs = page_tables == (void *)ARC_PHYS_TO_HHDM(Arc_KernelPageTables) ? 0x8 : 0x23;
+	thread->ctx.ss = page_tables == (void *)ARC_PHYS_TO_HHDM(Arc_KernelPageTables) ? 0x10 : 0x1b;
 	thread->ctx.rbp = (uintptr_t)mem + mem_size - 8;
 	thread->ctx.rsp = thread->ctx.rbp;
 	thread->ctx.r11 = 1 << 9 | 1 << 1;

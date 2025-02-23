@@ -29,6 +29,9 @@
 #define ARC_ARCH_START_H
 
 #include <stdint.h>
+#include <arch/process.h>
+
+extern struct ARC_Process *Arc_ProcessorHold;
 
 int init_arch();
 

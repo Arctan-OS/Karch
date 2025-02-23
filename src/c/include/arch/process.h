@@ -41,7 +41,10 @@ struct ARC_Process {
 	ARC_GenericSpinlock thread_lock;
 };
 
-struct ARC_Process *process_create(char *filepath);
+struct ARC_Process *process_create_from_file(int userspace, char *filepath);
+struct ARC_Process *process_create(int userspace, void *page_tables);
+int process_associate_thread(struct ARC_Process *process, struct ARC_Thread *thread);
+int process_disassociate_thread(struct ARC_Process *process, struct ARC_Thread *thread);
 int process_fork(struct ARC_Process *process);
 int process_delete(struct ARC_Process *process);
 struct ARC_Thread *process_get_next_thread(struct ARC_Process *process);

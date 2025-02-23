@@ -86,9 +86,9 @@ extern struct ARC_ProcessorDescriptor *Arc_BootProcessor;
 extern uint32_t Arc_ProcessorCounter;
 
 /**
- * Hold the given processor.
+ * Hold the invoking processor.
  * */
-int smp_hold(struct ARC_ProcessorDescriptor *processor);
+void __attribute__((naked)) smp_hold();
 
 /**
  * Write the given context to the given processor.

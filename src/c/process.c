@@ -37,7 +37,7 @@
 
 #define DEFAULT_MEMSIZE 0x1000 * 64
 
-struct ARC_Process *process_create(char *filepath) {
+struct ARC_Process *process_create_from_file(int userspace, char *filepath) {
 	if (filepath == NULL) {
 		ARC_DEBUG(ERR, "Failed to create process, no file given\n");
 		return NULL;
@@ -50,37 +50,123 @@ struct ARC_Process *process_create(char *filepath) {
 		return NULL;
 	}
 
-	struct ARC_Process *process = (struct ARC_Process *)alloc(sizeof(*process));
+	struct ARC_Process *process = process_create(userspace, NULL);
 	if (process == NULL) {
 		ARC_DEBUG(ERR, "Failed to allocate process\n");
 		return  NULL;
 	}
 
-	memset(process, 0, sizeof(*process));
-
-	void *page_tables = pmm_alloc(); // Allocate new top level page table
-	void *entry = load_elf(page_tables, file);
-
-	struct ARC_Thread *main = thread_create(page_tables, entry, DEFAULT_MEMSIZE);
+	void *entry = load_elf(process->page_tables, file);
+	struct ARC_Thread *main = thread_create(process->page_tables, entry, DEFAULT_MEMSIZE);
 
 	if (main == NULL) {
-		free(process);
+		process_delete(process);
 		ARC_DEBUG(ERR, "Failed to create main thread\n");
 		return NULL;
 	}
 
-	pager_clone(page_tables, (uintptr_t)&__KERNEL_START__, (uintptr_t)&__KERNEL_START__,
-		    ((uintptr_t)&__KERNEL_END__ - (uintptr_t)&__KERNEL_START__));
+	process_associate_thread(process, main);
 
-	process->threads = main;
-	process->nextex = main;
+	ARC_DEBUG(INFO, "Created process from file %s\n", filepath);
+
+	return process;
+}
+
+struct ARC_Process *process_create(int userspace, void *page_tables) {
+	struct ARC_Process *process = (struct ARC_Process *)alloc(sizeof(*process));
+
+	if (process == NULL) {
+		ARC_DEBUG(ERR, "Failed to allocate process\n");
+		return  NULL;
+	}
+
+	if (page_tables == NULL) {
+		if (userspace == 0) {
+			// Not a userspace process
+			page_tables = (void *)ARC_PHYS_TO_HHDM(Arc_KernelPageTables);
+			goto skip_page_tables;
+		}
+
+		page_tables = pager_create_page_tables();
+
+		if (page_tables == NULL) {
+			ARC_DEBUG(ERR, "Failed to allocate page tables\n");
+			free(process);
+			return NULL;
+		}
+
+		pager_clone(page_tables, (uintptr_t)&__KERNEL_START__, (uintptr_t)&__KERNEL_START__,
+			    ((uintptr_t)&__KERNEL_END__ - (uintptr_t)&__KERNEL_START__));
+	}
+
+	skip_page_tables:;
+
+	memset(process, 0, sizeof(*process));
+
 	process->page_tables = page_tables;
 
 	init_static_spinlock(&process->thread_lock);
 
-	ARC_DEBUG(INFO, "Created process\n");
-
 	return process;
+}
+
+int process_associate_thread(struct ARC_Process *process, struct ARC_Thread *thread) {
+	if (process == NULL || thread == NULL) {
+		ARC_DEBUG(ERR, "Failed associate thread (%p) with process (%p)\n", thread, process);
+		return -1;
+	}
+
+	spinlock_lock(&process->thread_lock);
+
+	if (process->threads == NULL) {
+		process->threads = thread;
+		process->nextex = thread;
+	} else {
+		thread->next = process->threads;
+		process->threads = thread;
+	}
+
+	spinlock_unlock(&process->thread_lock);
+
+	return 0;
+}
+
+int process_disassociate_thread(struct ARC_Process *process, struct ARC_Thread *thread) {
+	if (process == NULL || thread == NULL) {
+		ARC_DEBUG(ERR, "Failed disassociate thread (%p) with process (%p)\n", thread, process);
+		return -1;
+	}
+
+	// NOTE: This is terribly inefficient, have to come up with a better way to do this
+
+	spinlock_lock(&process->thread_lock);
+	struct ARC_Thread *current = process->threads;
+	struct ARC_Thread *last = NULL;
+
+	while (current != NULL) {
+		if (current == thread) {
+			break;
+		}
+
+		last = current;
+		current = current->next;
+	}
+
+	if (current == NULL) {
+		ARC_DEBUG(ERR, "Could not find thread (%p) in process (%p)\n", thread, process);
+		spinlock_unlock(&process->thread_lock);
+		return -1;
+	}
+
+	if (last == NULL) {
+		process->threads = thread->next;
+	} else {
+		last->next = thread->next;
+	}
+
+	spinlock_unlock(&process->thread_lock);
+
+	return 0;
 }
 
 int process_fork(struct ARC_Process *process) {
