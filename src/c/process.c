@@ -182,8 +182,6 @@ struct ARC_Thread *process_get_thread(struct ARC_Process *process) {
 		ARC_DEBUG(ERR, "Cannot get next thread of NULL process\n");
 		return NULL;
 	}
-
-	struct ARC_ProcessorDescriptor *processor = smp_get_proc_desc();
 	
 	struct ARC_Thread *ret = process->threads;
 	uint32_t expected = ARC_THREAD_READY;
@@ -194,10 +192,6 @@ struct ARC_Thread *process_get_thread(struct ARC_Process *process) {
 		}
 		
 		ret = ret->next;
-	}
-
-	if (ret == NULL || ret == processor->current_thread) {
-		return NULL;
 	}
 
 	return ret;
