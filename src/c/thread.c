@@ -67,6 +67,8 @@ struct ARC_Thread *thread_create(void *page_tables, void *entry, size_t mem_size
 	thread->ctx.rflags = 1 << 9 | 1 << 1;
 #endif
 
+	thread->state = ARC_THREAD_READY;
+	
 	ARC_DEBUG(INFO, "Created thread\n");
 
 	return thread;

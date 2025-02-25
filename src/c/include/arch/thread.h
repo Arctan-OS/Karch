@@ -35,11 +35,16 @@
 #include <stddef.h>
 #include <lib/atomics.h>
 
+#define ARC_THREAD_RUNNING 0
+#define ARC_THREAD_READY   1
+#define ARC_THREAD_SUSPEND 2
+
 struct ARC_Thread {
 	void *mem; // Heap begins at mem, stack begins at mem + mem_size - 8 bytes (on 64-bit machines)
 	size_t mem_size;
 	struct ARC_Thread *next;
 	ARC_GenericSpinlock lock;
+	uint32_t state;
 	struct ARC_Registers ctx;
 };
 

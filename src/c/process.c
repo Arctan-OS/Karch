@@ -24,6 +24,8 @@
  *
  * @DESCRIPTION
 */
+#include "arch/thread.h"
+#include "lib/atomics.h"
 #include <arch/process.h>
 #include <mm/allocator.h>
 #include <global.h>
@@ -105,8 +107,6 @@ struct ARC_Process *process_create(int userspace, void *page_tables) {
 
 	process->page_tables = page_tables;
 
-	init_static_spinlock(&process->thread_lock);
-
 	return process;
 }
 
@@ -116,17 +116,8 @@ int process_associate_thread(struct ARC_Process *process, struct ARC_Thread *thr
 		return -1;
 	}
 
-	spinlock_lock(&process->thread_lock);
-
-	if (process->threads == NULL) {
-		process->threads = thread;
-		process->nextex = thread;
-	} else {
-		thread->next = process->threads;
-		process->threads = thread;
-	}
-
-	spinlock_unlock(&process->thread_lock);
+	struct ARC_Thread *temp = thread;
+	ARC_ATOMIC_XCHG(&process->threads, &temp, &thread->next);
 
 	return 0;
 }
@@ -137,12 +128,11 @@ int process_disassociate_thread(struct ARC_Process *process, struct ARC_Thread *
 		return -1;
 	}
 
-	// NOTE: This is terribly inefficient, have to come up with a better way to do this
-
-	spinlock_lock(&process->thread_lock);
 	struct ARC_Thread *current = process->threads;
 	struct ARC_Thread *last = NULL;
 
+	// NOTE: I do not see a way to avoid this while loop (it would be great if I could),
+	//	 but the threads to do not keep track of the previous element, so I don't know
 	while (current != NULL) {
 		if (current == thread) {
 			break;
@@ -154,17 +144,15 @@ int process_disassociate_thread(struct ARC_Process *process, struct ARC_Thread *
 
 	if (current == NULL) {
 		ARC_DEBUG(ERR, "Could not find thread (%p) in process (%p)\n", thread, process);
-		spinlock_unlock(&process->thread_lock);
 		return -1;
 	}
 
+	struct ARC_Thread *temp = thread->next;
 	if (last == NULL) {
-		process->threads = thread->next;
+		ARC_ATOMIC_XCHG(&process->threads, &temp, &thread->next);
 	} else {
-		last->next = thread->next;
+		ARC_ATOMIC_XCHG(&last->next, &temp, &thread->next);
 	}
-
-	spinlock_unlock(&process->thread_lock);
 
 	return 0;
 }
@@ -182,34 +170,35 @@ int process_fork(struct ARC_Process *process) {
 
 int process_delete(struct ARC_Process *process) {
 	if (process == NULL) {
-		ARC_DEBUG(ERR, "Failed to delete process, given process is NULL\n");
+		ARC_DEBUG(ERR, "No process given\n");
 		return -1;
 	}
-
-	ARC_DEBUG(ERR, "Implement\n");
 
 	return 0;
 }
 
-struct ARC_Thread *process_get_next_thread(struct ARC_Process *process) {
+struct ARC_Thread *process_get_thread(struct ARC_Process *process) {
 	if (process == NULL) {
 		ARC_DEBUG(ERR, "Cannot get next thread of NULL process\n");
 		return NULL;
 	}
 
-	struct ARC_Thread *ret = NULL;
 	struct ARC_ProcessorDescriptor *processor = smp_get_proc_desc();
+	
+	struct ARC_Thread *ret = process->threads;
+	uint32_t expected = ARC_THREAD_READY;
 
-	spinlock_lock(&process->thread_lock);
-	ret = process->nextex;
-
-	if (ret == NULL || ret == processor->current_thread) {
-		spinlock_unlock(&process->thread_lock);
-		return NULL;
+	while (ret != NULL) {
+		if (ARC_ATOMIC_CMPXCHG(&ret->state, &expected, ARC_THREAD_RUNNING)) {
+			break;
+		}
+		
+		ret = ret->next;
 	}
 
-	process->nextex = ret->next;
-	spinlock_unlock(&process->thread_lock);
+	if (ret == NULL || ret == processor->current_thread) {
+		return NULL;
+	}
 
 	return ret;
 }
