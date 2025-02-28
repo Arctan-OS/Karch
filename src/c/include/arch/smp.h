@@ -56,7 +56,7 @@ struct ARC_ProcessorDescriptor {
 	struct ARC_ProcessorDescriptor *next;
 	struct ARC_Thread *last_thread;
 	struct ARC_Thread *current_thread;
-	struct ARC_Process *current_process;
+	struct ARC_ProcessEntry *current_process;
 	uint32_t acpi_uid;
 	uint32_t acpi_flags;
 	uint32_t flags;
@@ -70,8 +70,8 @@ struct ARC_ProcessorDescriptor {
 	// 31  | 1: Initialized
 	uint32_t timer_ticks;
 	uint32_t timer_mode;
-	ARC_GenericMutex timer_lock;
-	ARC_GenericMutex register_lock;
+	ARC_GenericSpinlock timer_lock;
+	ARC_GenericSpinlock register_lock;
 	struct ARC_Registers registers;
 }__attribute__((packed));
 
