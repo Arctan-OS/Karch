@@ -36,6 +36,7 @@
 #include <arch/x86-64/ctrl_regs.h>
 #include <mm/pmm.h>
 #include <arch/pager.h>
+#include <lib/convention/sysv.h>
 
 #define DEFAULT_MEMSIZE 0x1000 * 64
 
@@ -58,8 +59,8 @@ struct ARC_Process *process_create_from_file(int userspace, char *filepath) {
 		return  NULL;
 	}
 
-	void *entry = load_elf(process->page_tables, file);
-	struct ARC_Thread *main = thread_create(process->page_tables, entry, DEFAULT_MEMSIZE);
+	struct ARC_ELFMeta *meta = load_elf(process->page_tables, file);
+	struct ARC_Thread *main = thread_create(process->page_tables, meta, DEFAULT_MEMSIZE);
 
 	if (main == NULL) {
 		process_delete(process);
@@ -98,7 +99,7 @@ struct ARC_Process *process_create(int userspace, void *page_tables) {
 		}
 
 		pager_clone(page_tables, (uintptr_t)&__KERNEL_START__, (uintptr_t)&__KERNEL_START__,
-			    ((uintptr_t)&__KERNEL_END__ - (uintptr_t)&__KERNEL_START__));
+			    ((uintptr_t)&__KERNEL_END__ - (uintptr_t)&__KERNEL_START__), 0);
 	}
 
 	skip_page_tables:;
@@ -110,6 +111,9 @@ struct ARC_Process *process_create(int userspace, void *page_tables) {
 	return process;
 }
 
+// NOTE: Associate and disassociate are a little bit silly, so it may be worthwhile to streamline
+//       things by making it so that threads, upon creation, do this association, and on deletion,
+//       do the disassociation
 int process_associate_thread(struct ARC_Process *process, struct ARC_Thread *thread) {
 	if (process == NULL || thread == NULL) {
 		ARC_DEBUG(ERR, "Failed associate thread (%p) with process (%p)\n", thread, process);

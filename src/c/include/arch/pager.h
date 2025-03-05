@@ -48,6 +48,10 @@
 #define ARC_PAGER_RESV0   8
 #define ARC_PAGER_RESV1   9
 #define ARC_PAGER_RESV2   10
+// 4 bit number corresponding that is (level - 1) which will be used
+// as the cut off for the US_RW_OVERWRITE value in get_entry_bits
+#define ARC_PAGER_AUTO_USRW_DISABLE 11
+#define ARC_PAGER_RESV3 15
 
 // Indices in the 0x277 MSR (page attributes)
 #define ARC_PAGER_PAT_WB  0 // WB
@@ -68,7 +72,7 @@ int pager_unmap(void *page_tables, uintptr_t virtual, size_t size);
 int pager_fly_map(void *page_tables, uintptr_t virtual, size_t size, uint32_t attributes);
 int pager_fly_unmap(void *page_tables, uintptr_t virtual, size_t size);
 int pager_set_attr(void *page_tables, uintptr_t virtual, size_t size, uint32_t attributes);
-int pager_clone(void *page_tables, uintptr_t virt_src, uintptr_t virt_dest, size_t size);
+int pager_clone(void *page_tables, uintptr_t virt_src, uintptr_t virt_dest, size_t size, int source);
 uintptr_t pager_switch_to_kpages();
 int init_pager();
 

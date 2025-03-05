@@ -24,15 +24,19 @@
  *
  * @DESCRIPTION
 */
+#include <loaders/elf.h>
+#include <lib/convention/sysv.h>
+#include <arch/x86-64/apic/lapic.h>
+#include <mm/pmm.h>
 #include <arch/thread.h>
 #include <arch/pager.h>
 #include <mm/allocator.h>
 #include <global.h>
 #include <lib/util.h>
 
-struct ARC_Thread *thread_create(void *page_tables, void *entry, size_t mem_size) {
-	if (entry == NULL) {
-		ARC_DEBUG(ERR, "Failed to create thread, improper parameters (%p %lu)\n", entry, mem_size);
+struct ARC_Thread *thread_create(void *page_tables, struct ARC_ELFMeta *meta, size_t mem_size) {
+	if (meta == NULL || meta->entry == NULL) {
+		ARC_DEBUG(ERR, "Failed to create thread, improper parameters (%p %lu)\n", meta->entry, mem_size);
 		return NULL;
 	}
 
@@ -47,24 +51,23 @@ struct ARC_Thread *thread_create(void *page_tables, void *entry, size_t mem_size
 
 	void *mem = (void *)0x1000; // TODO: Change this depending on thread
 
-	pager_fly_map(page_tables, (uintptr_t)mem, mem_size, (1 << ARC_PAGER_RW) | (1 << ARC_PAGER_NX) | (1 << ARC_PAGER_US));
-
-	if (mem == NULL) {
+	if (mem == NULL ||
+		pager_fly_map(page_tables, (uintptr_t)mem, mem_size, (1 << ARC_PAGER_RW) | (1 << ARC_PAGER_NX) | (1 << ARC_PAGER_US)) != 0) {
 		free(thread);
 		ARC_DEBUG(ERR, "Failed to allocate memory for thread\n");
 		return NULL;
 	}
-
+ 
 	init_static_spinlock(&thread->lock);
 
 #ifdef ARC_TARGET_ARCH_X86_64
-	thread->ctx.rip = (uintptr_t)entry;
+	thread->ctx.rip = (uintptr_t)meta->entry;
 	thread->ctx.cs = page_tables == (void *)ARC_PHYS_TO_HHDM(Arc_KernelPageTables) ? 0x8 : 0x23;
 	thread->ctx.ss = page_tables == (void *)ARC_PHYS_TO_HHDM(Arc_KernelPageTables) ? 0x10 : 0x1b;
-	thread->ctx.rbp = (uintptr_t)mem + mem_size - 8;
+	thread->ctx.rbp = (uintptr_t)mem + mem_size - 16;
 	thread->ctx.rsp = thread->ctx.rbp;
-	thread->ctx.r11 = 1 << 9 | 1 << 1;
-	thread->ctx.rflags = 1 << 9 | 1 << 1;
+	thread->ctx.r11 = (1 << 9) | (1 << 1) | (0b11 << 12);
+	thread->ctx.rflags = (1 << 9) | (1 << 1) | (0b11 << 12);
 #endif
 
 	thread->state = ARC_THREAD_READY;
