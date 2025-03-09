@@ -60,7 +60,7 @@ struct ARC_Process *process_create_from_file(int userspace, char *filepath) {
 	}
 
 	struct ARC_ELFMeta *meta = load_elf(process->page_tables, file);
-	struct ARC_Thread *main = thread_create(process->page_tables, meta, DEFAULT_MEMSIZE);
+	struct ARC_Thread *main = thread_create(process->page_tables, meta->entry, DEFAULT_MEMSIZE);
 
 	if (main == NULL) {
 		process_delete(process);
@@ -69,6 +69,16 @@ struct ARC_Process *process_create_from_file(int userspace, char *filepath) {
 	}
 
 	process_associate_thread(process, main);
+
+	// TODO: Lock to make sure another load does not override?
+	pager_clone(process->page_tables, (uintptr_t)main->mem, (uintptr_t)main->mem, main->mem_size, 1);
+	char *argv[] = {"hello", "world"};
+
+	main->ctx.rsp = (uint64_t)sysv_prepare_entry_stack((uint64_t *)main->ctx.rsp, meta, NULL, 0, argv, 2);
+	pager_unmap(NULL, (uintptr_t)main->mem, main->mem_size);
+
+	free(meta);
+
 
 	ARC_DEBUG(INFO, "Created process from file %s\n", filepath);
 

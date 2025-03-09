@@ -49,7 +49,7 @@ struct ARC_Thread {
 	struct ARC_Registers ctx;
 };
 
-struct ARC_Thread *thread_create(void *page_tables, struct ARC_ELFMeta *meta, size_t mem_size);
+struct ARC_Thread *thread_create(void *page_tables, void *entry, size_t mem_size);
 int thread_delete(struct ARC_Thread *thread);
 
 #endif
