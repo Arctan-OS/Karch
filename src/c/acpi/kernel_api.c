@@ -1,6 +1,5 @@
 #include <uacpi/kernel_api.h>
 #include <global.h>
-#include <mm/vmm.h>
 #include <mm/allocator.h>
 #include <arch/pager.h>
 #include <lib/atomics.h>
