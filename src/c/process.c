@@ -24,14 +24,14 @@
  *
  * @DESCRIPTION
 */
-#include "arch/thread.h"
-#include "lib/atomics.h"
-#include "mm/vmm.h"
+#include <arch/thread.h>
+#include <lib/atomics.h>
+#include <mm/vmm.h>
 #include <arch/process.h>
 #include <mm/allocator.h>
 #include <global.h>
 #include <lib/util.h>
-#include <loaders/elf.h>
+#include <userspace/elf.h>
 #include <lib/perms.h>
 #include <arch/smp.h>
 #include <arch/x86-64/ctrl_regs.h>

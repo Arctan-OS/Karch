@@ -24,9 +24,8 @@
  *
  * @DESCRIPTION
 */
-#include "arctan.h"
-#include "mm/vmm.h"
-#include <loaders/elf.h>
+#include <arctan.h>
+#include <mm/vmm.h>
 #include <lib/convention/sysv.h>
 #include <arch/x86-64/apic/lapic.h>
 #include <mm/pmm.h>

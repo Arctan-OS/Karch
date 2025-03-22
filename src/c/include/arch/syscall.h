@@ -1,5 +1,5 @@
 /**
- * @file thread.h
+ * @file syscall.h
  *
  * @author awewsomegamer <awewsomegamer@gmail.com>
  *
@@ -24,34 +24,9 @@
  *
  * @DESCRIPTION
 */
-#ifndef ARC_ARCH_THREAD_H
-#define ARC_ARCH_THREAD_H
+#ifndef ARC_ARCH_SYSCALL
+#define ARC_ARCH_SYSCALL
 
-#include <mm/vmm.h>
-
-#ifdef ARC_TARGET_ARCH_X86_64
-#include <arch/x86-64/context.h>
-#endif
-
-#include <stdint.h>
-#include <stddef.h>
-#include <lib/atomics.h>
-
-#define ARC_THREAD_RUNNING 0
-#define ARC_THREAD_READY   1
-#define ARC_THREAD_SUSPEND 2
-
-struct ARC_Thread {
-	void *pstack;
-	void *vstack;
-	size_t stack_size;
-	struct ARC_Thread *next;
-	ARC_GenericSpinlock lock;
-	uint32_t state;
-	struct ARC_Registers ctx;
-};
-
-struct ARC_Thread *thread_create(struct ARC_VMMMeta *allocator, void *page_tables, void *entry, size_t stack_size);
-int thread_delete(struct ARC_Thread *thread);
+int init_syscall();
 
 #endif
