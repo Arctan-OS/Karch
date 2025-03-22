@@ -24,6 +24,8 @@
  *
  * @DESCRIPTION
 */
+#include "arctan.h"
+#include "mm/vmm.h"
 #include <loaders/elf.h>
 #include <lib/convention/sysv.h>
 #include <arch/x86-64/apic/lapic.h>
@@ -34,9 +36,9 @@
 #include <global.h>
 #include <lib/util.h>
 
-struct ARC_Thread *thread_create(void *page_tables, void *entry, size_t mem_size) {
+struct ARC_Thread *thread_create(struct ARC_VMMMeta *allocator, void *page_tables, void *entry, size_t stack_size) {
 	if (entry == NULL) {
-		ARC_DEBUG(ERR, "Failed to create thread, improper parameters (%p %lu)\n", entry, mem_size);
+		ARC_DEBUG(ERR, "Failed to create thread, improper parameters (%p %lu)\n", entry, stack_size);
 		return NULL;
 	}
 
@@ -49,31 +51,34 @@ struct ARC_Thread *thread_create(void *page_tables, void *entry, size_t mem_size
 
 	memset(thread, 0, sizeof(*thread));
 
-	void *mem = (void *)0x1000; // TODO: Change this depending on thread
-	
-	if (mem == NULL ||
-	    pager_fly_map(page_tables, (uintptr_t)mem, mem_size, (1 << ARC_PAGER_RW) | (1 << ARC_PAGER_NX) | (1 << ARC_PAGER_US)) != 0) {
-		free(thread);
-		ARC_DEBUG(ERR, "Failed to allocate memory for thread\n");
-		return NULL;
+	void *vstack = (void *)vmm_alloc(allocator, stack_size);
+	void *pstack = pmm_alloc(stack_size);
+
+	if (pstack == NULL || vstack == NULL ||
+		pager_map(page_tables, (uintptr_t)vstack, ARC_HHDM_TO_PHYS(pstack), stack_size, (1 << ARC_PAGER_RW) | (1 << ARC_PAGER_NX) | (1 << ARC_PAGER_US)) != 0) {
+			free(thread);
+			ARC_DEBUG(ERR, "Failed to allocate memory for thread\n");
+			return NULL;
 	}
 	
+
 	init_static_spinlock(&thread->lock);
 		
 #ifdef ARC_TARGET_ARCH_X86_64
 		thread->ctx.rip = (uintptr_t)entry;
 		thread->ctx.cs = page_tables == (void *)ARC_PHYS_TO_HHDM(Arc_KernelPageTables) ? 0x8 : 0x23;
 		thread->ctx.ss = page_tables == (void *)ARC_PHYS_TO_HHDM(Arc_KernelPageTables) ? 0x10 : 0x1b;
-		thread->ctx.rbp = (uintptr_t)mem + mem_size - 16;
+		thread->ctx.rbp = (uintptr_t)vstack + stack_size - 16;
 		thread->ctx.rsp = thread->ctx.rbp;
 		thread->ctx.r11 = (1 << 9) | (1 << 1) | (0b11 << 12);
 		thread->ctx.rflags = (1 << 9) | (1 << 1) | (0b11 << 12);
 #endif
 		
 	thread->state = ARC_THREAD_READY;
-	thread->mem = mem;
-	thread->mem_size = mem_size;
-		
+	thread->pstack = pstack;
+	thread->vstack = vstack;
+	thread->stack_size = stack_size;
+
 	ARC_DEBUG(INFO, "Created thread (%p)\n", entry);
 
 	return thread;

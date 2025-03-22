@@ -26,6 +26,7 @@
 */
 #include "arch/thread.h"
 #include "lib/atomics.h"
+#include "mm/vmm.h"
 #include <arch/process.h>
 #include <mm/allocator.h>
 #include <global.h>
@@ -39,6 +40,7 @@
 #include <lib/convention/sysv.h>
 
 #define DEFAULT_MEMSIZE 0x1000 * 64
+#define DEFAULT_STACKSIZE 0x2000
 
 struct ARC_Process *process_create_from_file(int userspace, char *filepath) {
 	if (filepath == NULL) {
@@ -54,13 +56,26 @@ struct ARC_Process *process_create_from_file(int userspace, char *filepath) {
 	}
 
 	struct ARC_Process *process = process_create(userspace, NULL);
+
 	if (process == NULL) {
 		ARC_DEBUG(ERR, "Failed to allocate process\n");
 		return  NULL;
 	}
 
 	struct ARC_ELFMeta *meta = load_elf(process->page_tables, file);
-	struct ARC_Thread *main = thread_create(process->page_tables, meta->entry, DEFAULT_MEMSIZE);
+
+	void *base = (void *)0x1000; // TODO: Determine this from ELF meta
+
+	process->allocator = init_vmm(base, DEFAULT_MEMSIZE);
+
+	if (process->allocator == NULL) {
+		// TODO: Destroy page maps, destroy currently allocated meta data
+		//       free all memory mapped by ELF loader
+		ARC_DEBUG(ERR, "Failed to create process allocator\n");
+		return NULL;
+	}
+	
+	struct ARC_Thread *main = thread_create(process->allocator, process->page_tables, meta->entry, DEFAULT_STACKSIZE);
 
 	if (main == NULL) {
 		process_delete(process);
@@ -70,21 +85,19 @@ struct ARC_Process *process_create_from_file(int userspace, char *filepath) {
 
 	process_associate_thread(process, main);
 
-	// TODO: Lock to make sure another load does not override?
-	pager_clone(process->page_tables, (uintptr_t)main->mem, (uintptr_t)main->mem, main->mem_size, 1);
 	char *argv[] = {"hello", "world"};
-
-	main->ctx.rsp = (uint64_t)sysv_prepare_entry_stack((uint64_t *)main->ctx.rsp, meta, NULL, 0, argv, 2);
-	pager_unmap(NULL, (uintptr_t)main->mem, main->mem_size);
+	
+	// TODO: Make architecture independent
+	main->ctx.rsp -= sysv_prepare_entry_stack((uint64_t *)main->pstack, meta, NULL, 0, argv, 2);
 
 	free(meta);
-
 
 	ARC_DEBUG(INFO, "Created process from file %s\n", filepath);
 
 	return process;
 }
 
+// Expected that process->base will be set by the caller
 struct ARC_Process *process_create(int userspace, void *page_tables) {
 	struct ARC_Process *process = (struct ARC_Process *)alloc(sizeof(*process));
 

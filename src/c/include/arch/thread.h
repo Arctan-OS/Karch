@@ -27,6 +27,7 @@
 #ifndef ARC_ARCH_THREAD_H
 #define ARC_ARCH_THREAD_H
 
+#include <mm/vmm.h>
 #include <loaders/elf.h>
 #ifdef ARC_TARGET_ARCH_X86_64
 #include <arch/x86-64/context.h>
@@ -41,15 +42,16 @@
 #define ARC_THREAD_SUSPEND 2
 
 struct ARC_Thread {
-	void *mem; // Heap begins at mem, stack begins at mem + mem_size - 8 bytes (on 64-bit machines)
-	size_t mem_size;
+	void *pstack;
+	void *vstack;
+	size_t stack_size;
 	struct ARC_Thread *next;
 	ARC_GenericSpinlock lock;
 	uint32_t state;
 	struct ARC_Registers ctx;
 };
 
-struct ARC_Thread *thread_create(void *page_tables, void *entry, size_t mem_size);
+struct ARC_Thread *thread_create(struct ARC_VMMMeta *allocator, void *page_tables, void *entry, size_t stack_size);
 int thread_delete(struct ARC_Thread *thread);
 
 #endif
