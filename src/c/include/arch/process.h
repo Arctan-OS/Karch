@@ -27,15 +27,18 @@
 #ifndef ARC_ARCH_PROCESS_H
 #define ARC_ARCH_PROCESS_H
 
+#include <mm/vmm.h>
+#include <config.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <arch/thread.h>
 
 struct ARC_Process {
+	struct ARC_VMMMeta *allocator;
 	struct ARC_Thread *threads;
 	void *page_tables;
 	void *base;
-	size_t size;
+	struct ARC_File *file_table[ARC_PROCESS_FILE_LIMIT];
 	int priority;
 };
 

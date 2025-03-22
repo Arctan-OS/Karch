@@ -51,12 +51,16 @@
 #include <arch/x86-64/apic/lapic.h>
 #endif
 
+// TODO: This structure can be changed such that there is no need for syscall_stack
+//       by making it so that the KernelGS pointer points to the stack, and on the stack
+//       is this structure. This would also eliminate the need for a processor descriptor list.
 struct ARC_ProcessorDescriptor {
 	uintptr_t syscall_stack;
 	struct ARC_ProcessorDescriptor *next;
 	struct ARC_Thread *last_thread;
 	struct ARC_Thread *current_thread;
 	struct ARC_ProcessEntry *current_process;
+	struct ARC_Registers registers;
 	uint32_t acpi_uid;
 	uint32_t acpi_flags;
 	uint32_t flags;
@@ -72,7 +76,6 @@ struct ARC_ProcessorDescriptor {
 	uint32_t timer_mode;
 	ARC_GenericSpinlock timer_lock;
 	ARC_GenericSpinlock register_lock;
-	struct ARC_Registers registers;
 }__attribute__((packed));
 
 // NOTE: The index in Arc_ProcessorList corresponds to the ID
