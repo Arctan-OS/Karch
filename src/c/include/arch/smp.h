@@ -44,8 +44,8 @@
 #include <arch/x86-64/context.h>
 #include <lib/atomics.h>
 #include <stdarg.h>
-#include <arch/thread.h>
-#include <arch/process.h>
+#include <userspace/thread.h>
+#include <userspace/process.h>
 
 #ifdef ARC_TARGET_ARCH_X86_64
 #include <arch/x86-64/apic/lapic.h>
