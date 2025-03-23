@@ -60,6 +60,7 @@ struct ARC_ProcessorDescriptor {
 	struct ARC_Thread *last_thread;
 	struct ARC_Thread *current_thread;
 	struct ARC_ProcessEntry *current_process;
+	void *scheduler_meta;
 	struct ARC_Registers registers;
 	uint32_t acpi_uid;
 	uint32_t acpi_flags;

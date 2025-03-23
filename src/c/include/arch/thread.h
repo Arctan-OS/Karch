@@ -37,21 +37,37 @@
 #include <stddef.h>
 #include <lib/atomics.h>
 
-#define ARC_THREAD_RUNNING 0
-#define ARC_THREAD_READY   1
-#define ARC_THREAD_SUSPEND 2
+enum {
+	ARC_THREAD_RUNNING = 0,
+	ARC_THREAD_READY,
+	ARC_THREAD_SUSPEND
+};
+
+enum {
+	ARC_THREAD_PROFILE_MEM = 0,
+	ARC_THREAD_PROFILE_IO,
+	ARC_THREAD_PROFILE_COUNT
+};
 
 struct ARC_Thread {
+	struct ARC_Thread *next;
 	void *pstack;
 	void *vstack;
 	size_t stack_size;
-	struct ARC_Thread *next;
+	struct {
+		uint64_t io_requests;
+		uint64_t suspensions;
+		// TODO: MORE DATA POINTS!
+	} profiling_data;
 	ARC_GenericSpinlock lock;
+	uint32_t profile;
 	uint32_t state;
 	struct ARC_Registers ctx;
 };
 
 struct ARC_Thread *thread_create(struct ARC_VMMMeta *allocator, void *page_tables, void *entry, size_t stack_size);
 int thread_delete(struct ARC_Thread *thread);
+int thread_set_profile(struct ARC_Thread *thread, uint32_t profile);
+uint32_t thread_get_profile(struct ARC_Thread *thread);
 
 #endif

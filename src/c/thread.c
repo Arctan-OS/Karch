@@ -97,3 +97,24 @@ int thread_delete(struct ARC_Thread *thread) {
 
 	return 0;
 }
+
+int thread_set_profile(struct ARC_Thread *thread, uint32_t profile) {
+	if (thread == NULL) {
+		return -1;
+	}
+
+	thread->profile = profile;
+}
+
+uint32_t thread_get_profile(struct ARC_Thread *thread) {
+	if (thread == NULL) {
+		return ARC_THREAD_PROFILE_COUNT;
+	}
+
+	uint32_t profile = ARC_THREAD_PROFILE_MEM;
+
+	// TODO: Math to determine ratios to determine best profile for thread
+
+	return profile;
+}
+
