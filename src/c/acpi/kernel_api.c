@@ -290,7 +290,7 @@ void uacpi_kernel_free(void *mem) {
 		return;
 	}
 
-	if (free(mem) != mem) {
+	if (free(mem) == 0) {
 		ARC_DEBUG(ERR, "Freeing %p\n", mem);
 	}
 }
