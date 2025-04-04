@@ -30,6 +30,7 @@
 #define ARC_ARCH_SMP_H
 
 // Offsets into flags attribute
+#include "arch/x86-64/context.h"
 #define ARC_SMP_FLAGS_CTXWRITE 0
 #define ARC_SMP_FLAGS_CTXSAVE 1
 #define ARC_SMP_FLAGS_WTIMER 2
@@ -41,7 +42,7 @@
 #include <config.h>
 
 #include <stdint.h>
-#include <arch/x86-64/context.h>
+#include <arch/context.h>
 #include <lib/atomics.h>
 #include <stdarg.h>
 #include <userspace/thread.h>
@@ -57,11 +58,9 @@
 struct ARC_ProcessorDescriptor {
 	uintptr_t syscall_stack;
 	struct ARC_ProcessorDescriptor *next;
-	struct ARC_Thread *last_thread;
 	struct ARC_Thread *current_thread;
 	struct ARC_ProcessEntry *current_process;
 	void *scheduler_meta;
-	struct ARC_Registers registers;
 	uint32_t acpi_uid;
 	uint32_t acpi_flags;
 	uint32_t flags;
@@ -77,6 +76,7 @@ struct ARC_ProcessorDescriptor {
 	uint32_t timer_mode;
 	ARC_GenericSpinlock timer_lock;
 	ARC_GenericSpinlock register_lock;
+	struct ARC_Context context;
 }__attribute__((packed));
 
 // NOTE: The index in Arc_ProcessorList corresponds to the ID
@@ -99,13 +99,13 @@ void __attribute__((naked)) smp_hold();
  *
  * NOTE: processor->register_lock is expected to be held.
  * */
-int smp_context_write(struct ARC_ProcessorDescriptor *processor, struct ARC_Registers *regs);
+int smp_context_write(struct ARC_ProcessorDescriptor *processor, struct ARC_Context *ctx);
 /**
  * Write the processor's context to the given registers structure.
  *
  * NOTE: processor->register_lock is expected to be held.
  * */
-int smp_context_save(struct ARC_ProcessorDescriptor *processor, struct ARC_Registers *regs);
+int smp_context_save(struct ARC_ProcessorDescriptor *processor, struct ARC_Context *ctx);
 
 /**
  * Tell the processor to execute the given function with the given arguments.
