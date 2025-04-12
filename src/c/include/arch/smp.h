@@ -30,9 +30,8 @@
 #define ARC_ARCH_SMP_H
 
 // Offsets into flags attribute
-#include "arch/x86-64/context.h"
-#define ARC_SMP_FLAGS_CTXWRITE 0
-#define ARC_SMP_FLAGS_CTXSAVE 1
+#define ARC_SMP_FLAGS_RESV0 0
+#define ARC_SMP_FLAGS_RESV1 1
 #define ARC_SMP_FLAGS_WTIMER 2
 #define ARC_SMP_FLAGS_HOLD 30
 #define ARC_SMP_FLAGS_INIT 31
@@ -58,25 +57,23 @@
 struct ARC_ProcessorDescriptor {
 	uintptr_t syscall_stack;
 	struct ARC_ProcessorDescriptor *next;
+	
 	struct ARC_Thread *current_thread;
 	struct ARC_ProcessEntry *current_process;
 	void *scheduler_meta;
+
 	uint32_t acpi_uid;
 	uint32_t acpi_flags;
 	uint32_t flags;
 	// Bit | Description
-	// 0   | 1: Signals external modification of register state, cleared once
-	//          changes have been accepted
-	// 1   | 1: Write all registers to the registers member of this structure
+	// 1:0 | Reserved
 	// 2   | 1: Timer values have been changed, cleared once changes have
 	//          been accepted
 	// 30  | 1: Holding
 	// 31  | 1: Initialized
+
 	uint32_t timer_ticks;
 	uint32_t timer_mode;
-	ARC_GenericSpinlock timer_lock;
-	ARC_GenericSpinlock register_lock;
-	struct ARC_Context context;
 }__attribute__((packed));
 
 // NOTE: The index in Arc_ProcessorList corresponds to the ID
@@ -93,34 +90,6 @@ extern uint32_t Arc_ProcessorCounter;
  * Hold the invoking processor.
  * */
 void __attribute__((naked)) smp_hold();
-
-/**
- * Write the given context to the given processor.
- *
- * NOTE: processor->register_lock is expected to be held.
- * */
-int smp_context_write(struct ARC_ProcessorDescriptor *processor, struct ARC_Context *ctx);
-/**
- * Write the processor's context to the given registers structure.
- *
- * NOTE: processor->register_lock is expected to be held.
- * */
-int smp_context_save(struct ARC_ProcessorDescriptor *processor, struct ARC_Context *ctx);
-
-/**
- * Tell the processor to execute the given function with the given arguments.
- *
- * NOTE: When a processor accepts the changes, it will write its current register
- *       (prior to accepting the changes) to processor->registers. The caller should
- *       save this if it wishes to return to this state.
- *
- * @param struct ARC_ProcessorDescriptor *processor - The processor to execute the jump on.
- * @param void *function - The function to jump to.
- * @param int argc - The number of arguments given to the function.
- * @param ... - The arguments to pass to the function.
- * @return zero on success.
- * */
-int smp_jmp(struct ARC_ProcessorDescriptor *processor, void *function, int argc, ...);
 
 int smp_switch_to_userspace();
 
