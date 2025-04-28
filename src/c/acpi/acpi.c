@@ -24,6 +24,8 @@
  *
  * @DESCRIPTION
 */
+#include <uacpi/namespace.h>
+#include <uacpi/resources.h>
 #include <arch/acpi/acpi.h>
 #include <uacpi/uacpi.h>
 #include <uacpi/event.h>
@@ -57,6 +59,42 @@ size_t acpi_get_table(const char *id, uint8_t **out) {
 	return table.hdr->length - 44;
 }
 
+uacpi_resource_iteration_decision res_ls_callback(void *user, uacpi_resource *resource) {
+	switch(resource->type) {
+		case UACPI_RESOURCE_TYPE_IRQ:{
+			printf("\tIRQs:\n");
+			for (int i = 0; i < resource->irq.num_irqs; i++) {
+				printf("\t\t%X\n", resource->irq.irqs[i]);
+			}
+			break;
+		}
+
+		case UACPI_RESOURCE_TYPE_IO: {
+			printf("IO: 0x%X -> 0x%X (%d) ALIGN %d DECODE %d\n", resource->io.minimum, resource->io.maximum, resource->io.length, resource->io.alignment, resource->io.decode_type);
+			break;
+		}
+
+		case UACPI_RESOURCE_TYPE_FIXED_IO: {
+			printf("FIXED IO: 0x%X (%d)\n", resource->fixed_io.address, resource->fixed_io.length);
+			break;
+		}
+	}
+
+	return UACPI_RESOURCE_ITERATION_CONTINUE;
+}
+
+uacpi_ns_iteration_decision ls_callback(void *user, uacpi_namespace_node *node) {
+	printf("%s\n", uacpi_namespace_node_generate_absolute_path(node));
+
+	struct uacpi_resources *out_resources = NULL;
+
+	if (uacpi_get_current_resources(node, &out_resources) == UACPI_STATUS_OK) {
+		uacpi_for_each_resource(out_resources, res_ls_callback, NULL);
+	}
+
+	return UACPI_NS_ITERATION_DECISION_CONTINUE;
+}
+
 int init_acpi() {
 	if (uacpi_initialize(0) != UACPI_STATUS_OK) {
 		ARC_DEBUG(ERR, "Failed to initialize uACPi\n");
@@ -72,6 +110,8 @@ int init_acpi() {
 	}
 
 	ARC_DEBUG(INFO, "Initialized uACPI\n");
+
+	uacpi_namespace_for_each_node_depth_first(uacpi_namespace_root(), ls_callback, NULL);
 
         return 0;
 }

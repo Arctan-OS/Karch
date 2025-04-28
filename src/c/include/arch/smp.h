@@ -89,13 +89,15 @@ extern uint32_t Arc_ProcessorCounter;
 /**
  * Hold the invoking processor.
  * */
-void __attribute__((naked)) smp_hold();
+void smp_hold();
 
 int smp_switch_to_userspace();
 
 struct ARC_ProcessorDescriptor *smp_get_proc_desc();
 
 uint32_t smp_get_processor_id();
+
+int smp_set_tcb(void *tcb);
 
 /**
  * Initialize an AP into an SMP system.
