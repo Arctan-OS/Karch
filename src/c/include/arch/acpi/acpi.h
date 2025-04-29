@@ -30,6 +30,25 @@
 #include <stdint.h>
 #include <stddef.h>
 
+struct ARC_ACPIDevInfo {
+        struct {
+                uint32_t base;
+                uint32_t length; // Bytes
+                uint32_t align;
+                uint32_t decode_type;
+        } io;
+
+        struct {
+                uint8_t *irq_list;
+                uint32_t irq_count;
+                uint8_t polarity;
+                uint8_t sharing;
+                uint8_t triggering;
+                uint8_t wake_capability;
+                uint8_t length_kind;
+        } irq;
+};
+
 int acpi_checksum(void *data, size_t length);
 size_t acpi_get_table(const char *id, uint8_t **out);
 int init_acpi();

@@ -24,6 +24,8 @@
  *
  * @DESCRIPTION
 */
+#include "lib/resource.h"
+#include "uacpi/utilities.h"
 #include <uacpi/namespace.h>
 #include <uacpi/resources.h>
 #include <arch/acpi/acpi.h>
@@ -59,23 +61,58 @@ size_t acpi_get_table(const char *id, uint8_t **out) {
 	return table.hdr->length - 44;
 }
 
+// https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function#FNV-1a_hash
+uint64_t acpi_hash_resource_hid(char *hid, size_t len) {
+	uint64_t hash = 0xcbf29ce484222325;
+
+	for (size_t i = 0; i < len; i++) {
+		hash ^= hid[i];
+		hash *= 0x100000001b3;
+	}
+
+	return hash;
+}
+
 uacpi_resource_iteration_decision res_ls_callback(void *user, uacpi_resource *resource) {
+	struct ARC_ACPIDevInfo *info = (struct ARC_ACPIDevInfo *)user;
+
+	if (info == NULL) {
+		return UACPI_RESOURCE_ITERATION_ABORT;
+	}
+
 	switch(resource->type) {
 		case UACPI_RESOURCE_TYPE_IRQ:{
-			printf("\tIRQs:\n");
 			for (int i = 0; i < resource->irq.num_irqs; i++) {
-				printf("\t\t%X\n", resource->irq.irqs[i]);
+				ARC_DEBUG(INFO, "\tIRQ: %d\n", resource->irq.irqs[i]);
 			}
+
+			info->irq.irq_count = resource->irq.num_irqs;
+			info->irq.irq_list = resource->irq.irqs;
+			info->irq.length_kind = resource->irq.length_kind;
+			info->irq.polarity = resource->irq.polarity;
+			info->irq.sharing = resource->irq.sharing;
+			info->irq.triggering = resource->irq.triggering;
+			info->irq.wake_capability = resource->irq.wake_capability;
+
 			break;
 		}
 
 		case UACPI_RESOURCE_TYPE_IO: {
-			printf("IO: 0x%X -> 0x%X (%d) ALIGN %d DECODE %d\n", resource->io.minimum, resource->io.maximum, resource->io.length, resource->io.alignment, resource->io.decode_type);
+			ARC_DEBUG(INFO, "\tIO: 0x%X -> 0x%X (%d) ALIGN %d DECODE %d\n", resource->io.minimum, resource->io.maximum, resource->io.length, resource->io.alignment, resource->io.decode_type);
+
+			info->io.base = resource->io.minimum;
+			info->io.length = resource->io.length;
+			info->io.align = resource->io.alignment;
+			info->io.decode_type = resource->io.decode_type;
+
 			break;
 		}
 
 		case UACPI_RESOURCE_TYPE_FIXED_IO: {
-			printf("FIXED IO: 0x%X (%d)\n", resource->fixed_io.address, resource->fixed_io.length);
+			ARC_DEBUG(INFO, "\tFIXED IO: 0x%X (%d)\n", resource->fixed_io.address, resource->fixed_io.length);
+			info->io.base = resource->fixed_io.address;
+			info->io.length = resource->fixed_io.length;
+
 			break;
 		}
 	}
@@ -84,12 +121,29 @@ uacpi_resource_iteration_decision res_ls_callback(void *user, uacpi_resource *re
 }
 
 uacpi_ns_iteration_decision ls_callback(void *user, uacpi_namespace_node *node) {
-	printf("%s\n", uacpi_namespace_node_generate_absolute_path(node));
-
+	(void)user;
+	
 	struct uacpi_resources *out_resources = NULL;
 
 	if (uacpi_get_current_resources(node, &out_resources) == UACPI_STATUS_OK) {
-		uacpi_for_each_resource(out_resources, res_ls_callback, NULL);
+		uacpi_id_string *uid = NULL;
+		uacpi_id_string *hid = NULL;
+		uint64_t hash = 0;
+
+		uacpi_eval_uid(node, &uid);
+		if (uacpi_eval_hid(node, &hid) == UACPI_STATUS_OK) {
+			hash = acpi_hash_resource_hid(hid->value, hid->size);
+		}
+
+		ARC_DEBUG(INFO, "%s (UID: %.*s HID: %.*s -> 0x%"PRIX64")\n", uacpi_namespace_node_generate_absolute_path(node), 
+						              (uid != NULL ? uid->size : 0), (uid != NULL ? uid->value : 0),
+						              (hid != NULL ? hid->size : 0), (hid != NULL ? hid->value : 0),
+							      hash);
+							
+		struct ARC_ACPIDevInfo info = { 0 };
+		uacpi_for_each_resource(out_resources, res_ls_callback, (void *)&info);
+
+		init_acpi_resource(hash, (void *)&info);
 	}
 
 	return UACPI_NS_ITERATION_DECISION_CONTINUE;
