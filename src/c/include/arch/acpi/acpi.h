@@ -30,23 +30,28 @@
 #include <stdint.h>
 #include <stddef.h>
 
-struct ARC_ACPIDevInfo {
-        struct {
-                uint32_t base;
-                uint32_t length; // Bytes
-                uint32_t align;
-                uint32_t decode_type;
-        } io;
+struct ARC_ACPIDevIO {
+        struct ARC_ACPIDevIO *next;
+        uint32_t base;
+        uint32_t length; // Bytes
+        uint32_t align;
+        uint32_t decode_type;
+};
 
-        struct {
-                uint8_t *irq_list;
-                uint32_t irq_count;
-                uint8_t polarity;
-                uint8_t sharing;
-                uint8_t triggering;
-                uint8_t wake_capability;
-                uint8_t length_kind;
-        } irq;
+struct ARC_ACPIDevIRQ{
+        struct ARC_ACPIDevIRQ *next;
+        uint8_t *irq_list;
+        uint32_t irq_count;
+        uint8_t polarity;
+        uint8_t sharing;
+        uint8_t triggering;
+        uint8_t wake_capability;
+        uint8_t length_kind;
+};
+
+struct ARC_ACPIDevInfo {
+        struct ARC_ACPIDevIO *io;
+        struct ARC_ACPIDevIRQ *irq;
 };
 
 int acpi_checksum(void *data, size_t length);
