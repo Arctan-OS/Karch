@@ -25,6 +25,7 @@
  * @DESCRIPTION
 */
 #include "interface/printf.h"
+#include "lib/hash.h"
 #include "lib/resource.h"
 #include "uacpi/utilities.h"
 #include <uacpi/namespace.h>
@@ -61,18 +62,6 @@ size_t acpi_get_table(const char *id, uint8_t **out) {
 	*out = (uint8_t *)table.ptr + 44;
 
 	return table.hdr->length - 44;
-}
-
-// https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function#FNV-1a_hash
-uint64_t acpi_hash_resource_hid(char *hid, size_t len) {
-	uint64_t hash = 0xcbf29ce484222325;
-
-	for (size_t i = 0; i < len; i++) {
-		hash ^= hid[i];
-		hash *= 0x100000001b3;
-	}
-
-	return hash;
 }
 
 static int acpi_clean_up_args(struct ARC_ACPIDevInfo *args) {
@@ -119,6 +108,8 @@ uacpi_resource_iteration_decision res_ls_callback(void *user, uacpi_resource *re
 				return UACPI_RESOURCE_ITERATION_ABORT;
 			}
 
+			memset(irq, 0, sizeof(*irq));
+
 			irq->irq_count = resource->irq.num_irqs;
 			irq->irq_list = resource->irq.irqs;
 			irq->length_kind = resource->irq.length_kind;
@@ -146,6 +137,8 @@ uacpi_resource_iteration_decision res_ls_callback(void *user, uacpi_resource *re
 				return UACPI_RESOURCE_ITERATION_ABORT;
 			}
 
+			memset(io, 0, sizeof(*io));
+
 			io->base = resource->io.minimum;
 			io->length = resource->io.length;
 			io->align = resource->io.alignment;
@@ -168,6 +161,8 @@ uacpi_resource_iteration_decision res_ls_callback(void *user, uacpi_resource *re
 				ARC_DEBUG(ERR, "Failed to allocate IRQ descriptor\n");
 				return UACPI_RESOURCE_ITERATION_ABORT;
 			}
+
+			memset(io, 0, sizeof(*io));
 
 			io->base = resource->fixed_io.address;
 			io->length = resource->fixed_io.length;
@@ -197,7 +192,7 @@ uacpi_ns_iteration_decision ls_callback(void *user, uacpi_namespace_node *node) 
 
 		uacpi_eval_uid(node, &uid);
 		if (uacpi_eval_hid(node, &hid) == UACPI_STATUS_OK) {
-			hash = acpi_hash_resource_hid(hid->value, hid->size);
+			hash = hash_fnv1a((uint8_t *)hid->value, hid->size);
 		}
 
 		ARC_DEBUG(INFO, "%s (UID: %.*s HID: %.*s -> 0x%"PRIX64")\n", uacpi_namespace_node_generate_absolute_path(node), 
@@ -209,7 +204,7 @@ uacpi_ns_iteration_decision ls_callback(void *user, uacpi_namespace_node *node) 
 		uacpi_for_each_resource(out_resources, res_ls_callback, (void *)&info);
 
 		init_acpi_resource(hash, (void *)&info);
-		// acpi_clean_up_args(&info);
+		acpi_clean_up_args(&info);
 	}
 
 	return UACPI_NS_ITERATION_DECISION_CONTINUE;
