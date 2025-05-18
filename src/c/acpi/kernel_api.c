@@ -1,3 +1,5 @@
+#include "arch/io/port.h"
+#include "uacpi/status.h"
 #include <uacpi/kernel_api.h>
 #include <global.h>
 #include <mm/allocator.h>
@@ -6,6 +8,11 @@
 #include <mp/scheduler.h>
 #include <lib/util.h>
 #include <arch/pci/pci.h>
+
+struct kernel_io_handle {
+	uint64_t base;
+	size_t len;
+};
 
 /*
  * Convenience initialization/deinitialization hooks that will be called by
@@ -113,19 +120,22 @@ uacpi_status uacpi_kernel_raw_io_read(uacpi_io_addr address, uacpi_u8 byte_width
 
 	switch (byte_width) {
 		case 1: {
-
+			*out_value = inb(address);
 			return UACPI_STATUS_OK;
 		}
 
 		case 2: {
+			*out_value = inw(address);
 			return UACPI_STATUS_OK;
 		}
 
 		case 4: {
+			*out_value = ind(address);
 			return UACPI_STATUS_OK;
 		}
 
 		case 8: {
+			*out_value = inq(address);
 			return UACPI_STATUS_OK;
 		}
 
@@ -141,18 +151,22 @@ uacpi_status uacpi_kernel_raw_io_write(uacpi_io_addr address, uacpi_u8 byte_widt
 
 	switch (byte_width) {
 		case 1: {
+			outb(address, in_value);
 			return UACPI_STATUS_OK;
 		}
 
 		case 2: {
+			outw(address, in_value);
 			return UACPI_STATUS_OK;
 		}
 
 		case 4: {
+			outd(address, in_value);
 			return UACPI_STATUS_OK;
 		}
 
 		case 8: {
+			outq(address, in_value);
 			return UACPI_STATUS_OK;
 		}
 
@@ -202,14 +216,31 @@ uacpi_status uacpi_kernel_pci_write(uacpi_pci_address *address, uacpi_size offse
  */
 uacpi_status uacpi_kernel_io_map(uacpi_io_addr base, uacpi_size len, uacpi_handle *out_handle) {
 	(void)len;
-	ARC_DEBUG(INFO, "IO MAP\n");
-	*out_handle = (void *)base;
+	ARC_DEBUG(WARN, "IO MAP\n");
+
+	struct kernel_io_handle *handle = alloc(sizeof(*handle));
+
+	if (handle == NULL) {
+		ARC_DEBUG(ERR, "Failed to create handle\n");
+		return UACPI_STATUS_DENIED;
+	}
+
+	handle->base = base;
+	handle->len = len;
+	
+	*out_handle = handle;
+
 	return UACPI_STATUS_OK;
 }
 
 void uacpi_kernel_io_unmap(uacpi_handle handle) {
-	(void)handle;
-	ARC_DEBUG(INFO, "IO UNMAP\n");
+	if (handle == NULL) {
+		ARC_DEBUG(ERR, "Failed to unmap handle\n");
+		return;
+	}
+	
+	free(handle);
+
 	return;
 }
 
@@ -227,7 +258,7 @@ uacpi_status uacpi_kernel_io_read(uacpi_handle handle, uacpi_size offset, uacpi_
 	(void)offset;
 	(void)byte_width;
 	(void)value;
-	ARC_DEBUG(INFO, "IO READ\n");
+	ARC_DEBUG(INFO, "IO RANGE READ\n");
 	return UACPI_STATUS_OK;
 }
 uacpi_status uacpi_kernel_io_write(uacpi_handle handle, uacpi_size offset, uacpi_u8 byte_width, uacpi_u64 value) {
@@ -235,7 +266,7 @@ uacpi_status uacpi_kernel_io_write(uacpi_handle handle, uacpi_size offset, uacpi
 	(void)offset;
 	(void)byte_width;
 	(void)value;
-	ARC_DEBUG(INFO, "IO WRITE\n");
+	ARC_DEBUG(INFO, "IO RANGE WRITE\n");
 	return UACPI_STATUS_OK;
 }
 
@@ -396,7 +427,6 @@ void uacpi_kernel_free_event(uacpi_handle handle) {
  * The returned thread id cannot be UACPI_THREAD_ID_NONE.
  */
 uacpi_thread_id uacpi_kernel_get_thread_id(void) {
-	ARC_DEBUG(INFO, "TID\n");
 	return (uacpi_thread_id)sched_get_current_tid();
 }
 
@@ -424,7 +454,7 @@ void uacpi_kernel_release_mutex(uacpi_handle handle) {
 uacpi_bool uacpi_kernel_wait_for_event(uacpi_handle handle, uacpi_u16 timeout) {
 	(void)handle;
 	(void)timeout;
-	ARC_DEBUG(INFO, "Waiting for event\n");
+	ARC_DEBUG(WARN, "Waiting for event\n");
 	return 0;
 }
 
@@ -435,7 +465,7 @@ uacpi_bool uacpi_kernel_wait_for_event(uacpi_handle handle, uacpi_u16 timeout) {
  */
 void uacpi_kernel_signal_event(uacpi_handle handle) {
 	(void)handle;
-	ARC_DEBUG(INFO, "Signalling\n");
+	ARC_DEBUG(WARN, "Signalling\n");
 	return;
 }
 
@@ -444,7 +474,7 @@ void uacpi_kernel_signal_event(uacpi_handle handle) {
  */
 void uacpi_kernel_reset_event(uacpi_handle handle) {
 	(void)handle;
-	ARC_DEBUG(INFO, "Reseting event\n");
+	ARC_DEBUG(WARN, "Reseting event\n");
 	return;
 }
 
