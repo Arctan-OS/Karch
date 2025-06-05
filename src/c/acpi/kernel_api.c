@@ -36,7 +36,7 @@ void uacpi_kernel_deinitialize(void) { return UACPI_STATUS_OK; }
 
 // Returns the PHYSICAL address of the RSDP structure via *out_rsdp_address.
 uacpi_status uacpi_kernel_get_rsdp(uacpi_phys_addr *out_rsdp_address) {
-	*out_rsdp_address = Arc_BootMeta->rsdp;
+	*out_rsdp_address = Arc_KernelMeta->rsdp;
 	return UACPI_STATUS_OK;
 }
 
