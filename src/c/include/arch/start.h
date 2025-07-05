@@ -30,6 +30,7 @@
 
 #include <stdint.h>
 
+int init_arch_early();
 int init_arch();
 
 #endif
