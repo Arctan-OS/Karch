@@ -31,5 +31,6 @@
 
 uint32_t arch_physical_address_width();
 uint32_t arch_virtual_address_width();
+uint64_t arch_get_cycles();
 
 #endif
