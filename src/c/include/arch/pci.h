@@ -24,8 +24,8 @@
  *
  * @DESCRIPTION
 */
-#ifndef ARC_ARCH_PCI_PCI_H
-#define ARC_ARCH_PCI_PCI_H
+#ifndef ARC_ARCH_PCI_H
+#define ARC_ARCH_PCI_H
 
 #include <stdint.h>
 #include <stddef.h>
@@ -129,7 +129,7 @@ struct ARC_PCIHdr2 {
 }__attribute__((packed));
 STATIC_ASSERT(sizeof(struct ARC_PCIHdr2) == 0x38, "PCI Header 2 wrong length");
 
-struct ARC_PCIHeader {
+typedef struct ARC_PCIHeader {
 	struct {
 		uint32_t call; // 15:0 - Bus segment
 			       // 23:16 - Bus
@@ -141,12 +141,12 @@ struct ARC_PCIHeader {
 		struct ARC_PCIHdr1 header1;
 		struct ARC_PCIHdr2 header2;
 	} headers;
-}__attribute__((packed));
+}__attribute__((packed)) ARC_PCIHeader;
 
 int pci_write(uint16_t segment, uint8_t bus, uint8_t device, uint8_t function, size_t offset, uint8_t byte_width, uint32_t value);
 uint32_t pci_read(uint16_t segment, uint8_t bus, uint8_t device, uint8_t function, size_t offset);
 
-struct ARC_PCIHeader *pci_read_header(uint16_t segment, uint8_t bus, uint8_t device);
+ARC_PCIHeader *pci_read_header(uint16_t segment, uint8_t bus, uint8_t device);
 
 uint16_t pci_get_status(uint16_t segment, uint8_t bus, uint8_t device);
 int pci_set_command(uint16_t segment, uint8_t bus, uint8_t device, uint16_t command);

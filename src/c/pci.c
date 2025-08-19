@@ -24,8 +24,9 @@
  *
  * @DESCRIPTION
 */
+#include "arch/acpi/table.h"
 #include <arch/acpi/acpi.h>
-#include <arch/pci/pci.h>
+#include <arch/pci.h>
 #include <lib/resource.h>
 #include <stdint.h>
 #include <global.h>
@@ -34,14 +35,7 @@
 
 #define PCI_GET_FUNCTION_BASE(segment, bus, device, function)
 
-struct mcfg_entry {
-	uint64_t base;
-	uint16_t seg_group;
-	uint8_t start_bus;
-	uint8_t end_bus;
-	uint32_t resv0;
-}__attribute__((packed));
-static struct mcfg_entry *mcfg_space = NULL;
+static ARC_MCFGEntry *mcfg_space = NULL;
 static int mcfg_count = 0;
 
 int pci_write(uint16_t segment, uint8_t bus, uint8_t device, uint8_t function, size_t offset, uint8_t byte_width, uint32_t value) {
@@ -126,7 +120,7 @@ static inline uint8_t pci_get_header_type(uint16_t segment, uint8_t bus, uint8_t
 	return (pci_read(segment, bus, device, 0, 0xC) >> 16) & 0xFF;
 }
 
-struct ARC_PCIHeader *pci_read_header(uint16_t segment, uint8_t bus, uint8_t device) {
+ARC_PCIHeader *pci_read_header(uint16_t segment, uint8_t bus, uint8_t device) {
 	struct ARC_PCIHeader *header = NULL;
 	uint32_t *data = (uint32_t *)alloc(sizeof(*header));
 
@@ -144,7 +138,6 @@ struct ARC_PCIHeader *pci_read_header(uint16_t segment, uint8_t bus, uint8_t dev
 
 	return header;
 }
-
 static int pci_enumerate() {
 	// TODO: Make this account for bridges
 
@@ -164,16 +157,15 @@ static int pci_enumerate() {
 }
 
 static int setup_mcfg() {
-	size_t size = acpi_get_table("MCFG", (uint8_t **)&mcfg_space);
+	ARC_MCFGIterator it = NULL;
 
-	if (size == 0) {
-		return -1;
-	}
+	while (acpi_get_next_mcfg_entry(&it) == 0) {
+		if (mcfg_count == 0) {
+			mcfg_space = it;
+		}
 
-	mcfg_count = size / sizeof(*mcfg_space);
-
-	for (int i = 0; i < mcfg_count; i++) {
-		ARC_DEBUG(INFO, "Configuration Space %d: Base: 0x%"PRIx64" Group: %d Buses: [%d %d]\n", i, mcfg_space[i].base, mcfg_space[i].seg_group, mcfg_space[i].start_bus, mcfg_space[i].end_bus);
+		ARC_DEBUG(INFO, "Configuration Space %d: Base: 0x%"PRIx64" Group: %d Buses: [%d %d]\n", mcfg_count, it->base, it->seg_group, it->start_bus, it->end_bus);
+		mcfg_count++;
 	}
 
 	return 0;
