@@ -29,8 +29,14 @@
 
 #include <stdint.h>
 
+typedef enum {
+        ARC_ARCH_TYPE_INTEL,
+        ARC_ARCH_TYPE_AMD,
+} ARC_ARCHTYPE;
+
 uint32_t arch_physical_address_width();
 uint32_t arch_virtual_address_width();
+ARC_ARCHTYPE arch_processor_type();
 uint64_t arch_get_cycles();
 
 #endif
