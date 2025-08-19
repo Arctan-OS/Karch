@@ -39,31 +39,6 @@
 #include <lib/util.h>
 #include <mm/allocator.h>
 
-int acpi_checksum(void *data, size_t length) {
-	int8_t *bytes = (int8_t *)data;
-	int8_t sum = *bytes;
-
-	for (size_t i = 1; i < length; i++) {
-		sum += bytes[i];
-	}
-
-	return sum;
-}
-
-size_t acpi_get_table(const char *id, uint8_t **out) {
-	uacpi_table table = { 0 };
-	int r = 0;
-
-	if ((r = uacpi_table_find_by_signature(id, &table)) != UACPI_STATUS_OK) {
-		ARC_DEBUG(ERR, "Failed to get table (%d)\n", r);
-		return -1;
-	}
-
-	*out = (uint8_t *)table.ptr + 44;
-
-	return table.hdr->length - 44;
-}
-
 static int acpi_clean_up_args(struct ARC_ACPIDevInfo *args) {
 	if (args == NULL) {
 		return -1;
@@ -101,7 +76,7 @@ uacpi_resource_iteration_decision res_ls_callback(void *user, uacpi_resource *re
 				ARC_DEBUG(INFO, "\tIRQ: %d\n", resource->irq.irqs[i]);
 			}
 
-			struct ARC_ACPIDevIRQ *irq = alloc(sizeof(*irq));
+			ARC_ACPIDevIRQ *irq = alloc(sizeof(*irq));
 
 			if (irq == NULL) {
 				ARC_DEBUG(ERR, "Failed to allocate IRQ descriptor\n");
@@ -130,7 +105,7 @@ uacpi_resource_iteration_decision res_ls_callback(void *user, uacpi_resource *re
 		case UACPI_RESOURCE_TYPE_IO: {
 			ARC_DEBUG(INFO, "\tIO: 0x%X -> 0x%X (%d) ALIGN %d DECODE %d\n", resource->io.minimum, resource->io.maximum, resource->io.length, resource->io.alignment, resource->io.decode_type);
 
-			struct ARC_ACPIDevIO *io = alloc(sizeof(*io));
+			ARC_ACPIDevIO *io = alloc(sizeof(*io));
 
 			if (io == NULL) {
 				ARC_DEBUG(ERR, "Failed to allocate IRQ descriptor\n");
@@ -155,7 +130,7 @@ uacpi_resource_iteration_decision res_ls_callback(void *user, uacpi_resource *re
 
 		case UACPI_RESOURCE_TYPE_FIXED_IO: {
 			ARC_DEBUG(INFO, "\tFIXED IO: 0x%X (%d)\n", resource->fixed_io.address, resource->fixed_io.length);
-			struct ARC_ACPIDevIO *io = alloc(sizeof(*io));
+			ARC_ACPIDevIO *io = alloc(sizeof(*io));
 
 			if (io == NULL) {
 				ARC_DEBUG(ERR, "Failed to allocate IRQ descriptor\n");

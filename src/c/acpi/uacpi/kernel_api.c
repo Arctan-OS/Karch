@@ -7,7 +7,7 @@
 #include <lib/atomics.h>
 #include <mp/scheduler.h>
 #include <lib/util.h>
-#include <arch/pci/pci.h>
+#include <arch/pci.h>
 
 struct kernel_io_handle {
 	uint64_t base;

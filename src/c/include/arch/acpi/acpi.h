@@ -24,21 +24,21 @@
  *
  * @DESCRIPTION
 */
-#ifndef ARC_ARCH_ACPI_ACPI_H
-#define ARC_ARCH_ACPI_ACPI_H
+#ifndef ARC_ARCH_ACPI_H
+#define ARC_ARCH_ACPI_H
 
 #include <stdint.h>
 #include <stddef.h>
 
-struct ARC_ACPIDevIO {
+typedef struct ARC_ACPIDevIO {
         struct ARC_ACPIDevIO *next;
         uint32_t base;
         uint32_t length; // Bytes
         uint32_t align;
         uint32_t decode_type;
-};
+} __attribute__((packed)) ARC_ACPIDevIO;
 
-struct ARC_ACPIDevIRQ{
+typedef struct ARC_ACPIDevIRQ {
         struct ARC_ACPIDevIRQ *next;
         uint8_t *irq_list;
         uint32_t irq_count;
@@ -47,15 +47,13 @@ struct ARC_ACPIDevIRQ{
         uint8_t triggering;
         uint8_t wake_capability;
         uint8_t length_kind;
-};
+} __attribute__((packed)) ARC_ACPIDevIRQ;
 
-struct ARC_ACPIDevInfo {
+typedef struct ARC_ACPIDevInfo {
         struct ARC_ACPIDevIO *io;
         struct ARC_ACPIDevIRQ *irq;
-};
+} ARC_ACPIDevInfo;
 
-int acpi_checksum(void *data, size_t length);
-size_t acpi_get_table(const char *id, uint8_t **out);
 int init_acpi();
 
 #endif
