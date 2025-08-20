@@ -28,7 +28,12 @@
 #define ARC_ARCH_CONTEXT_H
 
 #ifdef ARC_TARGET_ARCH_X86_64
-#include <arch/x86-64/context.h>
+#include "arch/x86-64/context.h"
 #endif
+
+void context_set_tcb(ARC_Context *ctx, void *tcb);
+void *context_get_tcb(ARC_Context *ctx);
+void context_load();
+void context_save();
 
 #endif
