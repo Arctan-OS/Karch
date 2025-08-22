@@ -40,8 +40,12 @@ typedef enum {
         ARC_INTERRUPT_FLAGS_GROUP,   // 1: Group, 0: Individual controller
 } ARC_INTERRUPT_FLAGS;
 
+// The architecture specific header must define a structure specifying
+// the order of general purpose registers and a structure organizing the
+// registers pushed upon invokation of an interrupt. The two structures are
+// not mutually exclusive
 
-int interrupt_set(void *handle, uint32_t number, void (*function)(ARC_Registers *), bool kernel);
+int interrupt_set(void *handle, uint32_t number, void (*function)(ARC_InterruptFrame *), bool kernel);
 int interrupt_map_gsi(uint32_t gsi, uint32_t to_irq, uint32_t to_id, uint8_t flags);
 int interrupt_load(void *handle);
 
