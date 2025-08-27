@@ -31,9 +31,18 @@
 #include "arch/x86-64/context.h"
 #endif
 
+// NOTE: The architecture specific context.h header file should define
+//       structures for accessing general purpose registers as ARC_Registers,
+//       a structure to access the stack frame of an interrupt handler as
+//       ARC_InterruptFrame, and define a structure holding all relevant
+//       context information that may change from process to process as
+//       ARC_Context
+
+// NOTE: The architecture specific context.h header file should define
+//       macros to, in assembly, push all and pop all registers in the
+//       order defined in ARC_Registers
+
 void context_set_tcb(ARC_Context *ctx, void *tcb);
 void *context_get_tcb(ARC_Context *ctx);
-void context_load();
-void context_save();
 
 #endif
