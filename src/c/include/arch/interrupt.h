@@ -27,12 +27,16 @@
 #ifndef ARC_ARCH_INTERRUPT_H
 #define ARC_ARCH_INTERRUPT_H
 
-#ifdef ARC_TARGET_ARCH_X86_64
-#include "arch/x86-64/context.h"
-#endif
-
 #include <stdbool.h>
 #include <stdint.h>
+
+#ifdef ARC_TARGET_ARCH_X86_64
+#include "arch/x86-64/interrupt.h"
+#endif
+
+// NOTE: Architecture specific interrupt.h header files should define a macro for creating
+//       a naked function that has the appropriate pre- and post-ambles for interrupts. The
+//       function is to be used as the function pointer argument for interrupt_set
 
 typedef enum {
         ARC_INTERRUPT_FLAGS_TRIGGER, // 1: Level, 0: Edge
@@ -45,12 +49,9 @@ typedef enum {
 // registers pushed upon invokation of an interrupt. The two structures are
 // not mutually exclusive
 
-int interrupt_set(void *handle, uint32_t number, void (*function)(ARC_InterruptFrame *), bool kernel);
+int interrupt_set(void *handle, uint32_t number, void (*function)(), bool kernel);
 int interrupt_map_gsi(uint32_t gsi, uint32_t to_irq, uint32_t to_id, uint8_t flags);
 int interrupt_load(void *handle);
-
 void *init_dynamic_interrupts(int count);
-int init_early_irqs();
-int init_early_exceptions();
 
 #endif
