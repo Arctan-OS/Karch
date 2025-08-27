@@ -30,10 +30,7 @@
 #define ARC_ARCH_SMP_H
 
 #include <stdint.h>
-
 #include "arch/context.h"
-#include "mp/scheduler.h"
-#include "userspace/thread.h"
 
 // Offsets into flags attribute
 enum {
