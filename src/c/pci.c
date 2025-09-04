@@ -4,12 +4,12 @@
  * @author awewsomegamer <awewsomegamer@gmail.com>
  *
  * @LICENSE
- * Arctan-OS/Kernel - Operating System Kernel
+ * Arctan-OS/Karch - Abstract Definition, Declaration of Architecture Functions
  * Copyright (C) 2023-2025 awewsomegamer
  *
- * This file is part of Arctan-OS/Kernel.
+ * This file is part of Arctan-OS/Karch.
  *
- * Arctan is free software; you can redistribute it and/or
+ * Arctan-OS/Karch is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; version 2
  *
@@ -24,14 +24,13 @@
  *
  * @DESCRIPTION
 */
+#include "arch/acpi/acpi.h"
 #include "arch/acpi/table.h"
-#include <arch/acpi/acpi.h>
-#include <arch/pci.h>
-#include <lib/resource.h>
-#include <stdint.h>
-#include <global.h>
-#include <mm/allocator.h>
-#include <arch/io/port.h>
+#include "arch/io/port.h"
+#include "arch/pci.h"
+#include "drivers/resource.h"
+#include "global.h"
+#include "mm/allocator.h"
 
 #define PCI_GET_FUNCTION_BASE(segment, bus, device, function)
 

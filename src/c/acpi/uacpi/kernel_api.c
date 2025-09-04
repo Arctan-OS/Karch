@@ -5,6 +5,8 @@
 #include <mm/allocator.h>
 #include <arch/pager.h>
 #include <lib/atomics.h>
+#include "lib/mutex.h"
+#include "lib/spinlock.h"
 #include <mp/scheduler.h>
 #include <lib/util.h>
 #include <arch/pci.h>
@@ -392,7 +394,7 @@ void uacpi_kernel_sleep(uacpi_u64 msec) {
  * Create/free an opaque non-recursive kernel mutex object.
  */
 uacpi_handle uacpi_kernel_create_mutex(void) {
-	ARC_GenericMutex *mutex = NULL;
+	ARC_Mutex *mutex = NULL;
 
 	if (init_mutex(&mutex) != 0) {
 		ARC_DEBUG(ERR, "Failed to allocate mutex\n");
@@ -403,7 +405,7 @@ uacpi_handle uacpi_kernel_create_mutex(void) {
 }
 
 void uacpi_kernel_free_mutex(uacpi_handle handle) {
-	if (uninit_mutex((ARC_GenericMutex *)handle) != 0) {
+	if (uninit_mutex((ARC_Mutex *)handle) != 0) {
 		ARC_DEBUG(ERR, "Failed to destroy mutex %p\n", handle);
 	}
 }
@@ -436,11 +438,11 @@ uacpi_thread_id uacpi_kernel_get_thread_id(void) {
  */
 uacpi_bool uacpi_kernel_acquire_mutex(uacpi_handle handle, uacpi_u16 timeout) {
 	(void)timeout;
-	return mutex_lock((ARC_GenericMutex *)handle) == 0;
+	return mutex_lock((ARC_Mutex *)handle) == 0;
 }
 
 void uacpi_kernel_release_mutex(uacpi_handle handle) {
-	mutex_unlock((ARC_GenericMutex *)handle);
+	mutex_unlock((ARC_Mutex *)handle);
 }
 
 /*
@@ -521,7 +523,7 @@ uacpi_status uacpi_kernel_uninstall_interrupt_handler(uacpi_interrupt_handler ha
  * Unlike other types of locks, spinlocks may be used in interrupt contexts.
  */
 uacpi_handle uacpi_kernel_create_spinlock(void) {
-	ARC_GenericSpinlock *spinlock = NULL;
+	ARC_Spinlock *spinlock = NULL;
 
 	if (init_spinlock(&spinlock) != 0) {
 		ARC_DEBUG(ERR, "Failed to create spinlock\n");
@@ -531,7 +533,7 @@ uacpi_handle uacpi_kernel_create_spinlock(void) {
 }
 
 void uacpi_kernel_free_spinlock(uacpi_handle handle) {
-	if (uninit_spinlock((ARC_GenericSpinlock *)handle) != 0) {
+	if (uninit_spinlock((ARC_Spinlock *)handle) != 0) {
 		ARC_DEBUG(ERR, "Failed to free spinlock\n");
 	}
 }
@@ -547,7 +549,7 @@ void uacpi_kernel_free_spinlock(uacpi_handle handle) {
  */
 uacpi_cpu_flags uacpi_kernel_lock_spinlock(uacpi_handle handle) {
 	ARC_DEBUG(ERR, "Disable interrupts, RFLAGS\n");
-	if (spinlock_lock((ARC_GenericSpinlock *)handle) != 0) {
+	if (spinlock_lock((ARC_Spinlock *)handle) != 0) {
 		ARC_DEBUG(ERR, "Failed to lock spinlock\n");
 	}
 
@@ -557,7 +559,7 @@ uacpi_cpu_flags uacpi_kernel_lock_spinlock(uacpi_handle handle) {
 
 void uacpi_kernel_unlock_spinlock(uacpi_handle handle, uacpi_cpu_flags flags) {
 	(void)flags;
-	if (spinlock_unlock((ARC_GenericSpinlock *)handle) != 0) {
+	if (spinlock_unlock((ARC_Spinlock *)handle) != 0) {
 		ARC_DEBUG(ERR, "Failed to unlock spinlock\n");
 	}
 }
