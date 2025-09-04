@@ -1,15 +1,14 @@
 #include "arch/io/port.h"
-#include "uacpi/status.h"
-#include <uacpi/kernel_api.h>
-#include <global.h>
-#include <mm/allocator.h>
-#include <arch/pager.h>
-#include <lib/atomics.h>
+#include "arch/pager.h"
+#include "arch/pci.h"
+#include "global.h"
 #include "lib/mutex.h"
 #include "lib/spinlock.h"
-#include <mp/scheduler.h>
-#include <lib/util.h>
-#include <arch/pci.h>
+#include "lib/util.h"
+#include "mm/allocator.h"
+#include "mp/scheduler.h"
+#include "uacpi/kernel_api.h"
+#include "uacpi/status.h"
 
 struct kernel_io_handle {
 	uint64_t base;

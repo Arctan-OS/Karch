@@ -27,12 +27,12 @@
 #ifndef ARC_ARCH_INTERRUPT_H
 #define ARC_ARCH_INTERRUPT_H
 
-#include <stdbool.h>
-#include <stdint.h>
-
 #ifdef ARC_TARGET_ARCH_X86_64
 #include "arch/x86-64/interrupt.h"
 #endif
+
+#include <stdbool.h>
+#include <stdint.h>
 
 // NOTE: Architecture specific interrupt.h header files should define a macro for creating
 //       a naked function that has the appropriate pre- and post-ambles for interrupts. The

@@ -29,8 +29,9 @@
 #ifndef ARC_ARCH_SMP_H
 #define ARC_ARCH_SMP_H
 
-#include <stdint.h>
 #include "arch/context.h"
+
+#include <stdint.h>
 
 // Offsets into flags attribute
 enum {

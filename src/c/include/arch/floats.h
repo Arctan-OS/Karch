@@ -27,8 +27,9 @@
 #ifndef ARC_ARCH_FLOATS_H
 #define ARC_ARCH_FLOATS_H
 
+#include "arch/context.h"
+
 #include <stdint.h>
-#include <arch/context.h>
 
 // TODO: Bit flag offsets?
 

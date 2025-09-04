@@ -28,6 +28,9 @@
 #ifndef ARC_ARCH_PAGER_H
 #define ARC_ARCH_PAGER_H
 
+#include <stdint.h>
+#include <stddef.h>
+
 // * = Specific to Arctan
 // () = Default value
 // Offset of page attributes
@@ -60,9 +63,6 @@
 #define ARC_PAGER_PAT_WC  3 // WC
 #define ARC_PAGER_PAT_WT  4 // WT
 #define ARC_PAGER_PAT_WP  5 // WP
-
-#include <stdint.h>
-#include <stddef.h>
 
 extern uintptr_t Arc_KernelPageTables;
 

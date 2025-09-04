@@ -24,20 +24,19 @@
  *
  * @DESCRIPTION
 */
-#include "interface/printf.h"
-#include "lib/hash.h"
+#include "arch/acpi/acpi.h"
 #include "drivers/resource.h"
+#include "fs/vfs.h"
+#include "global.h"
+#include "lib/hash.h"
+#include "lib/util.h"
+#include "mm/allocator.h"
+#include "uacpi/event.h"
+#include "uacpi/namespace.h"
+#include "uacpi/resources.h"
+#include "uacpi/tables.h"
+#include "uacpi/uacpi.h"
 #include "uacpi/utilities.h"
-#include <uacpi/namespace.h>
-#include <uacpi/resources.h>
-#include <arch/acpi/acpi.h>
-#include <uacpi/uacpi.h>
-#include <uacpi/event.h>
-#include <uacpi/tables.h>
-#include <fs/vfs.h>
-#include <global.h>
-#include <lib/util.h>
-#include <mm/allocator.h>
 
 static int acpi_clean_up_args(struct ARC_ACPIDevInfo *args) {
 	if (args == NULL) {

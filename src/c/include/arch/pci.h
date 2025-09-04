@@ -27,9 +27,10 @@
 #ifndef ARC_ARCH_PCI_H
 #define ARC_ARCH_PCI_H
 
+#include "global.h"
+
 #include <stdint.h>
 #include <stddef.h>
-#include <global.h>
 
 #define ARC_BAR_IS_IOSPACE(__bar) ((__bar & 1) == 1)
 #define ARC_IOBAR_ADDR(__bar) ((__bar >> 2) & 0x3FFFFFFF)
