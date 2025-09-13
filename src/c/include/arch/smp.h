@@ -43,8 +43,7 @@ enum {
 };
 
 typedef struct ARC_ProcessorDescriptor {
-	struct ARC_Thread *current_thread;
-	struct ARC_ProcessEntry *current_process;
+	struct ARC_Thread *thread;
 	void *scheduler_meta;
 
 	uint32_t acpi_uid;
