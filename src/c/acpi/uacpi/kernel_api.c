@@ -428,7 +428,13 @@ void uacpi_kernel_free_event(uacpi_handle handle) {
  * The returned thread id cannot be UACPI_THREAD_ID_NONE.
  */
 uacpi_thread_id uacpi_kernel_get_thread_id(void) {
-	return (uacpi_thread_id)sched_get_current_tid();
+	ARC_Thread *thread = sched_current_thread();
+
+	if (thread == NULL) {
+		return 0;
+	}
+
+	return (uacpi_thread_id)thread->tid;
 }
 
 /*
