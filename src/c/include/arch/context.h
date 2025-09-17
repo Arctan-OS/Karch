@@ -45,4 +45,7 @@
 void context_set_tcb(ARC_Context *ctx, void *tcb);
 void *context_get_tcb(ARC_Context *ctx);
 
+int uninit_context(ARC_Context *context);
+ARC_Context *init_context(uint64_t flags);
+
 #endif
