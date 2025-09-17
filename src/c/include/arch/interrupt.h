@@ -27,6 +27,8 @@
 #ifndef ARC_ARCH_INTERRUPT_H
 #define ARC_ARCH_INTERRUPT_H
 
+#define ARC_NAME_IRQ(_handler) irq_handler_##_handler
+
 #ifdef ARC_TARGET_ARCH_X86_64
 #include "arch/x86-64/interrupt.h"
 #endif
@@ -52,6 +54,7 @@ typedef enum {
 int interrupt_set(void *handle, uint32_t number, void (*function)(), bool kernel);
 int interrupt_map_gsi(uint32_t gsi, uint32_t to_irq, uint32_t to_id, uint8_t flags);
 int interrupt_load(void *handle);
+void interrupt_end();
 void *init_dynamic_interrupts(int count);
 
 #endif
