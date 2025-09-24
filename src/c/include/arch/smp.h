@@ -66,13 +66,10 @@ extern uint32_t Arc_ProcessorCounter;
  * Hold the invoking processor.
  * */
 void smp_hold();
-
 ARC_ProcessorDescriptor *smp_get_proc_desc();
-
 uint32_t smp_get_processor_id();
-
 void smp_switch_to(ARC_Context *ctx);
-
+int smp_map_processor_structures(void *page_tables);
 int init_smp();
 
 #endif
