@@ -31,38 +31,42 @@
 #include <stdint.h>
 #include <stddef.h>
 
-// * = Specific to Arctan
-// () = Default value
-// Offset of page attributes
-//  +0: PWT, +1: PCD, +2: PAT
-// Page attributes (0)
-#define ARC_PAGER_PAT     0
-// 1: User accessible page (0)
-#define ARC_PAGER_US      3
-// 1: Overwrite if entry is already present * (0)
-#define ARC_PAGER_OVW     4
-// 1: Disable execution on entry (0)
-#define ARC_PAGER_NX      5
-// 1: Use only 4K pages (0)
-#define ARC_PAGER_4K      6
-// 1: Read and Write allowed (0)
-#define ARC_PAGER_RW      7
-// Reserved for internal use
-#define ARC_PAGER_RESV0   8
-#define ARC_PAGER_RESV1   9
-#define ARC_PAGER_RESV2   10
-// 4 bit number corresponding that is (level - 1) which will be used
-// as the cut off for the US_RW_OVERWRITE value in get_entry_bits
-#define ARC_PAGER_AUTO_USRW_DISABLE 11
-#define ARC_PAGER_RESV3 15
+// TODO: Make this abstract. In its current state, it is specific to x86-64
+
+enum {
+        // Page attributes
+        // +0 PWT, +1 PCD, +2 PAT
+        ARC_PAGER_PAT,
+        // 1: Allow user access
+        ARC_PAGER_US = 3,
+        // 1: Overwrite existing paging structures
+        ARC_PAGER_OVW,
+        // 1: Mark pages as non-executable
+        ARC_PAGER_NX,
+        // 1: Only use 4K pages
+        ARC_PAGER_4K,
+        // 1: Mark pages as R/W
+        ARC_PAGER_RW,
+        // Reserved for internal use
+        ARC_PAGER_RESV0,
+        ARC_PAGER_RESV1,
+        ARC_PAGER_RESV2,
+        // 4-bit number corresponding to what (level - 1) will serve
+        // as the cut off point for setting the US and RW flags
+        ARC_PAGER_AUTO_USRW_DISABLE,
+        // Reserved for internal use
+        ARC_PAGER_RESV3 = 15,
+};
 
 // Indices in the 0x277 MSR (page attributes)
-#define ARC_PAGER_PAT_WB  0 // WB
-#define ARC_PAGER_PAT_UC  1 // UC
-#define ARC_PAGER_PAT_UCM 2 // UC-
-#define ARC_PAGER_PAT_WC  3 // WC
-#define ARC_PAGER_PAT_WT  4 // WT
-#define ARC_PAGER_PAT_WP  5 // WP
+enum {
+        ARC_PAGER_PAT_WB,   // WB
+        ARC_PAGER_PAT_UC,   // UC
+        ARC_PAGER_PAT_UCM,  // UC-
+        ARC_PAGER_WC,       // WC
+        ARC_PAGER_WT,       // WT
+        ARC_PAGER_WP,       // WP
+};
 
 extern uintptr_t Arc_KernelPageTables;
 

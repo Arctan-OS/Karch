@@ -27,7 +27,12 @@
 #ifndef ARC_ARCH_INFO_H
 #define ARC_ARCH_INFO_H
 
+#include <stdbool.h>
 #include <stdint.h>
+
+#ifdef ARC_TARGET_ARCH_X86_64
+#include "arch/x86-64/info.h"
+#endif
 
 typedef enum {
         ARC_ARCH_TYPE_INTEL,
@@ -62,5 +67,7 @@ uint32_t arch_physical_address_width();
 uint32_t arch_virtual_address_width();
 ARC_ARCHTYPE arch_processor_type();
 uint64_t arch_get_cycles();
+uint64_t arch_get_flags();
+bool arch_interrupts_enabled();
 
 #endif
