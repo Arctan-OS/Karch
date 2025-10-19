@@ -71,6 +71,7 @@ enum {
 extern uintptr_t Arc_KernelPageTables;
 
 void *pager_create_page_tables();
+int pager_delete_page_tables(void *page_tables);
 int pager_map(void *page_tables, uintptr_t virtual, uintptr_t physical, size_t size, uint32_t attributes) ;
 int pager_unmap(void *page_tables, uintptr_t virtual, size_t size, void **physical);
 int pager_fly_map(void *page_tables, uintptr_t virtual, size_t size, uint32_t attributes);
