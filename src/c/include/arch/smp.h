@@ -30,6 +30,8 @@
 #define ARC_ARCH_SMP_H
 
 #include "arch/context.h"
+#include "userspace/process.h"
+#include "userspace/thread.h"
 
 #include <stdint.h>
 
@@ -43,7 +45,9 @@ enum {
 };
 
 typedef struct ARC_ProcessorDescriptor {
-	struct ARC_Thread *thread;
+	ARC_Thread *thread;
+        ARC_Process *process;
+
 	void *scheduler_meta;
 
 	uint32_t acpi_uid;
