@@ -42,6 +42,12 @@
 //       macros to, in assembly, push all and pop all registers in the
 //       order defined in ARC_Registers
 
+
+enum {
+        ARC_CONTEXT_FLAG_FLOATS,
+        ARC_CONTEXT_FLAG_MAX
+};
+
 void context_set_tcb(ARC_Context *ctx, void *tcb);
 void *context_get_tcb(ARC_Context *ctx);
 
