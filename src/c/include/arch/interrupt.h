@@ -55,6 +55,7 @@ int interrupt_set(void *handle, uint32_t number, void (*function)(), bool kernel
 int interrupt_map_gsi(uint32_t gsi, uint32_t to_irq, uint32_t to_id, uint8_t flags);
 int interrupt_load(void *handle);
 void interrupt_end();
+int init_static_interrupts(void *table, void *entries, int count);
 void *init_dynamic_interrupts(int count);
 
 #endif
