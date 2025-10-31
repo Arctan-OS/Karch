@@ -77,7 +77,7 @@ int pager_unmap(void *page_tables, uintptr_t virtual, size_t size, void **physic
 int pager_fly_map(void *page_tables, uintptr_t virtual, size_t size, uint32_t attributes);
 int pager_fly_unmap(void *page_tables, uintptr_t virtual, size_t size);
 int pager_set_attr(void *page_tables, uintptr_t virtual, size_t size, uint32_t attributes);
-int pager_clone(void *page_tables, uintptr_t virt_src, uintptr_t virt_dest, size_t size, int source);
+int pager_clone(void *dest, void *src, uintptr_t virt_src, uintptr_t virt_dest, size_t size);
 int init_pager();
 
 #endif
