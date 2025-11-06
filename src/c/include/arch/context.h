@@ -56,6 +56,7 @@ void context_save(ARC_Context *ctx, ARC_InterruptFrame *new);
 void context_load(ARC_Context *ctx, ARC_InterruptFrame *to);
 int context_set_proc_features(ARC_ProcessorFeatures *features);
 int context_check_features(ARC_ProcessorFeatures *needed, ARC_ProcessorFeatures *avl);
+void context_setup_for_thread(ARC_Context *context, void *entry, void *stack, void *page_tables, bool userspace);
 int uninit_context(ARC_Context *context);
 ARC_Context *init_context(uint64_t flags, ARC_ProcessorFeatures *features);
 
