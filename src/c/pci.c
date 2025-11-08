@@ -115,41 +115,6 @@ uint32_t pci_read(uint16_t segment, uint8_t bus, uint8_t device, uint8_t functio
 	return ind(PCI_IO_CFG_DATA);
 }
 
-int pci_write_header(ARC_PCIHeader *header) {
-	if (header == NULL) {
-		return -1;
-	}
-
-	uint32_t *data = (uint32_t *)header;
-	uint16_t segment = header->info.segment;
-	uint8_t bus = header->info.bus;
-	uint8_t device = header->info.device;
-
-	for (size_t i = sizeof(header->info); i < sizeof(*header); i += 4) {
-		pci_write(segment, bus, device, 0, i - 4, 4, data[i / 4]);
-	}
-
-	return 0;
-}
-
-ARC_PCIHeader *pci_get_mmio_header(uint16_t segment, uint8_t bus, uint8_t device) {
-	if (mcfg_count <= 0) {
-		return NULL;
-	}
-
-	// Use mcfg space
-	if (segment > mcfg_count) {
-		ARC_DEBUG(ERR, "Invalid segment %d\n", segment);
-		return NULL;
-	}
-
-	size_t off = ((bus << 20) | (device << 15) | (0 << 12));
-	void *base = (uint32_t *)ARC_PHYS_TO_HHDM(mcfg_space[segment].base + off);
-
-	return (ARC_PCIHeader *)base;
-}
-
-
 uint16_t pci_get_status(uint16_t segment, uint8_t bus, uint8_t device) {
 	return pci_read(segment, bus, device, 4, 0);
 }
@@ -166,25 +131,83 @@ static inline uint8_t pci_get_header_type(uint16_t segment, uint8_t bus, uint8_t
 	return (pci_read(segment, bus, device, 0, 0xC) >> 16) & 0xFF;
 }
 
-ARC_PCIHeader *pci_read_header(uint16_t segment, uint8_t bus, uint8_t device) {
-	struct ARC_PCIHeader *header = NULL;
-	uint32_t *data = (uint32_t *)alloc(sizeof(*header));
+ARC_PCIHeaderMeta *pci_read_header(uint16_t segment, uint8_t bus, uint8_t device) {
+	ARC_PCIHeader *header = alloc(sizeof(*header));
 
-	if (data == NULL) {
+	if (header == NULL) {
+		ARC_DEBUG(ERR, "Failed to allocate header\n");
 		return NULL;
 	}
 
-	header = (struct ARC_PCIHeader *)data;
-	header->info.segment = segment;
-	header->info.bus = bus;
-	header->info.device = device;
+	ARC_PCIHeaderMeta *ret = alloc(sizeof(*ret));
 
-	for (size_t i = sizeof(header->info); i < sizeof(*header); i += 4) {
-		data[i / 4] = pci_read(segment, bus, device, 0, i - 4);
+	if (ret == NULL) {
+		ARC_DEBUG(ERR, "Failed to allocate meta structure\n");
+		free(header);
+		return NULL;
 	}
 
-	return header;
+	ret->header = header;
+
+
+	ret->segment = segment;
+	ret->bus = bus;
+	ret->device = device;
+
+	uint32_t *data = (uint32_t *)header;
+	for (size_t i = 0; i < sizeof(*header); i += 4) {
+		data[i / 4] = pci_read(segment, bus, device, 0, i);
+	}
+
+	return ret;
 }
+
+int pci_write_header(ARC_PCIHeaderMeta *meta) {
+	if (meta == NULL) {
+		return -1;
+	}
+
+	uint32_t *data = (uint32_t *)meta->header;
+	uint16_t segment = meta->segment;
+	uint8_t bus = meta->bus;
+	uint8_t device = meta->device;
+
+	for (size_t i = 0; i < sizeof(*meta->header); i += 4) {
+		pci_write(segment, bus, device, 0, i, 4, data[i / 4]);
+	}
+
+	return 0;
+}
+
+ARC_PCIHeaderMeta *pci_get_mmio_header(uint16_t segment, uint8_t bus, uint8_t device) {
+	if (mcfg_count <= 0) {
+		return NULL;
+	}
+
+	if (segment > mcfg_count) {
+		ARC_DEBUG(ERR, "Invalid segment %d\n", segment);
+		return NULL;
+	}
+
+	ARC_PCIHeaderMeta *ret = alloc(sizeof(*ret));
+
+	if (ret == NULL) {
+		ARC_DEBUG(ERR, "Failed to allocate meta structure\n");
+		return NULL;
+	}
+
+	ret->segment = segment;
+	ret->bus = bus;
+	ret->device = device;
+
+	size_t off = ((bus << 20) | (device << 15) | (0 << 12));
+	void *base = (uint32_t *)ARC_PHYS_TO_HHDM(mcfg_space[segment].base + off);
+
+	ret->header = base;
+
+	return ret;
+}
+
 
 static int pci_enumerate() {
 	// TODO: Make this account for bridges
