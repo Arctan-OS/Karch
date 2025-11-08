@@ -30,8 +30,9 @@
 #include "global.h"
 #include "util.h"
 
-#include <stdint.h>
+#include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #define ARC_BAR_IS_IOSPACE(__bar) ((__bar & 1) == 1)
 #define ARC_IOBAR_ADDR(__bar) ((__bar >> 2) & 0x3FFFFFFF)
@@ -159,6 +160,7 @@ typedef struct ARC_PCIHeaderMeta {
 	uint16_t segment;
 	uint8_t bus;
 	uint8_t device;
+	bool is_mmio;
 	ARC_PCIHeader *header;
 } ARC_PCIHeaderMeta;
 

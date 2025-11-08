@@ -147,8 +147,10 @@ ARC_PCIHeaderMeta *pci_read_header(uint16_t segment, uint8_t bus, uint8_t device
 		return NULL;
 	}
 
-	ret->header = header;
+	memset(ret, 0, sizeof(*ret));
+	memset(header, 0, sizeof(*header));
 
+	ret->header = header;
 
 	ret->segment = segment;
 	ret->bus = bus;
@@ -196,6 +198,9 @@ ARC_PCIHeaderMeta *pci_get_mmio_header(uint16_t segment, uint8_t bus, uint8_t de
 		return NULL;
 	}
 
+	memset(ret, 0, sizeof(*ret));
+
+	ret->is_mmio = true;
 	ret->segment = segment;
 	ret->bus = bus;
 	ret->device = device;
@@ -208,7 +213,6 @@ ARC_PCIHeaderMeta *pci_get_mmio_header(uint16_t segment, uint8_t bus, uint8_t de
 	return ret;
 }
 
-
 static int pci_enumerate() {
 	// TODO: Make this account for bridges
 
@@ -219,7 +223,11 @@ static int pci_enumerate() {
 			continue;
 		}
 
-		struct ARC_PCIHeader *header = pci_read_header(0, 0, i);
+		ARC_PCIHeaderMeta *header = pci_get_mmio_header(0, 0, i);
+
+		if (header == NULL) {
+			header = pci_read_header(0, 0, i);
+		}
 
 		init_pci_resource(vendor_device, header);
 	}
