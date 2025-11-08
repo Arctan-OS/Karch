@@ -164,6 +164,8 @@ int pci_write(uint16_t segment, uint8_t bus, uint8_t device, uint8_t function, s
 uint32_t pci_read(uint16_t segment, uint8_t bus, uint8_t device, uint8_t function, size_t offset);
 
 ARC_PCIHeader *pci_read_header(uint16_t segment, uint8_t bus, uint8_t device);
+int pci_write_header(ARC_PCIHeader *header);
+ARC_PCIHeader *pci_get_mmio_header(uint16_t segment, uint8_t bus, uint8_t device);
 
 uint16_t pci_get_status(uint16_t segment, uint8_t bus, uint8_t device);
 int pci_set_command(uint16_t segment, uint8_t bus, uint8_t device, uint16_t command);

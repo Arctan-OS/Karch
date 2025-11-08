@@ -115,6 +115,41 @@ uint32_t pci_read(uint16_t segment, uint8_t bus, uint8_t device, uint8_t functio
 	return ind(PCI_IO_CFG_DATA);
 }
 
+int pci_write_header(ARC_PCIHeader *header) {
+	if (header == NULL) {
+		return -1;
+	}
+
+	uint32_t *data = (uint32_t *)header;
+	uint16_t segment = header->info.segment;
+	uint8_t bus = header->info.bus;
+	uint8_t device = header->info.device;
+
+	for (size_t i = sizeof(header->info); i < sizeof(*header); i += 4) {
+		pci_write(segment, bus, device, 0, i - 4, 4, data[i / 4]);
+	}
+
+	return 0;
+}
+
+ARC_PCIHeader *pci_get_mmio_header(uint16_t segment, uint8_t bus, uint8_t device) {
+	if (mcfg_count <= 0) {
+		return NULL;
+	}
+
+	// Use mcfg space
+	if (segment > mcfg_count) {
+		ARC_DEBUG(ERR, "Invalid segment %d\n", segment);
+		return NULL;
+	}
+
+	size_t off = ((bus << 20) | (device << 15) | (0 << 12));
+	void *base = (uint32_t *)ARC_PHYS_TO_HHDM(mcfg_space[segment].base + off);
+
+	return (ARC_PCIHeader *)base;
+}
+
+
 uint16_t pci_get_status(uint16_t segment, uint8_t bus, uint8_t device) {
 	return pci_read(segment, bus, device, 4, 0);
 }
@@ -149,40 +184,6 @@ ARC_PCIHeader *pci_read_header(uint16_t segment, uint8_t bus, uint8_t device) {
 	}
 
 	return header;
-}
-
-int pci_write_header(ARC_PCIHeader *header) {
-	if (header == NULL) {
-		return -1;
-	}
-
-	uint32_t *data = (uint32_t *)header;
-	uint16_t segment = header->info.segment;
-	uint8_t bus = header->info.bus;
-	uint8_t device = header->info.device;
-
-	for (size_t i = sizeof(header->info); i < sizeof(*header); i += 4) {
-		pci_write(segment, bus, device, 0, i - 4, 4, data[i / 4]);
-	}
-
-	return 0;
-}
-
-ARC_PCIHeader *pci_get_mmio_header(uint16_t segment, uint8_t bus, uint8_t device) {
-	if (mcfg_count <= 0) {
-		return NULL;
-	}
-
-	// Use mcfg space
-	if (segment > mcfg_count) {
-		ARC_DEBUG(ERR, "Invalid segment %d\n", segment);
-		return NULL;
-	}
-
-	size_t off = ((bus << 20) | (device << 15) | (0 << 12));
-	void *base = (uint32_t *)ARC_PHYS_TO_HHDM(mcfg_space[segment].base + off);
-
-	return (ARC_PCIHeader *)base;
 }
 
 static int pci_enumerate() {
