@@ -148,7 +148,7 @@ typedef struct ARC_PCIHdrCanbus {
 STATIC_ASSERT(sizeof(ARC_PCIHdrCanbus) == 0x38, "PCI Header 2 wrong length");
 
 typedef struct ARC_PCIHeader {
-	struct ARC_PCIHdrCommon common;
+	ARC_PCIHdrCommon common;
 	union {
 		ARC_PCIHdrDevice device;
 		ARC_PCIHdrPCI pci_pci;
@@ -164,15 +164,19 @@ typedef struct ARC_PCIHeaderMeta {
 	ARC_PCIHeader *header;
 } ARC_PCIHeaderMeta;
 
+enum {
+        ARC_PCI_HEADER_DEVICE = 0,
+	ARC_PCI_HEADER_PCI,
+	ARC_PCI_HEADER_CANBUS,
+};
+
 int pci_write(uint16_t segment, uint8_t bus, uint8_t device, uint8_t function, size_t offset, uint8_t byte_width, uint32_t value);
 uint32_t pci_read(uint16_t segment, uint8_t bus, uint8_t device, uint8_t function, size_t offset);
 
 ARC_PCIHeaderMeta *pci_read_header(uint16_t segment, uint8_t bus, uint8_t device);
 int pci_write_header(ARC_PCIHeaderMeta *header);
 ARC_PCIHeaderMeta *pci_get_mmio_header(uint16_t segment, uint8_t bus, uint8_t device);
-
-uint16_t pci_get_status(uint16_t segment, uint8_t bus, uint8_t device);
-int pci_set_command(uint16_t segment, uint8_t bus, uint8_t device, uint16_t command);
+int pci_free_header(ARC_PCIHeaderMeta *meta) ;
 
 int init_pci();
 

@@ -32,7 +32,6 @@
 #include "global.h"
 #include "mm/allocator.h"
 
-#define PCI_GET_FUNCTION_BASE(segment, bus, device, function)
 #define PCI_IO_CFG_ADDRESS 0xCF8
 #define PCI_IO_CFG_DATA    0xCFC
 
@@ -115,22 +114,6 @@ uint32_t pci_read(uint16_t segment, uint8_t bus, uint8_t device, uint8_t functio
 	return ind(PCI_IO_CFG_DATA);
 }
 
-uint16_t pci_get_status(uint16_t segment, uint8_t bus, uint8_t device) {
-	return pci_read(segment, bus, device, 4, 0);
-}
-
-int pci_set_command(uint16_t segment, uint8_t bus, uint8_t device, uint16_t command) {
-	return pci_write(segment, bus, device, 6, 0, 2, command);
-}
-
-static inline uint32_t pci_get_vendor_device(uint16_t segment, uint8_t bus, uint8_t device) {
-	return pci_read(segment, bus, device, 0, 0);
-}
-
-static inline uint8_t pci_get_header_type(uint16_t segment, uint8_t bus, uint8_t device) {
-	return (pci_read(segment, bus, device, 0, 0xC) >> 16) & 0xFF;
-}
-
 ARC_PCIHeaderMeta *pci_read_header(uint16_t segment, uint8_t bus, uint8_t device) {
 	ARC_PCIHeader *header = alloc(sizeof(*header));
 
@@ -181,6 +164,10 @@ int pci_write_header(ARC_PCIHeaderMeta *meta) {
 	return 0;
 }
 
+// TODO: This function may cause errors. I am pretty sure that accesses to
+//       the MMIO space must be 32-bit in which case this would cause
+//       errors as the header field has non 32-bit memebers. Though PCI may
+//       correct for this. Look into this
 ARC_PCIHeaderMeta *pci_get_mmio_header(uint16_t segment, uint8_t bus, uint8_t device) {
 	if (mcfg_count <= 0) {
 		return NULL;
@@ -213,23 +200,48 @@ ARC_PCIHeaderMeta *pci_get_mmio_header(uint16_t segment, uint8_t bus, uint8_t de
 	return ret;
 }
 
-static int pci_enumerate() {
-	// TODO: Make this account for bridges
+int pci_free_header(ARC_PCIHeaderMeta *meta) {
+	if (meta == NULL) {
+		return -1;
+	}
 
+	if (!meta->is_mmio) {
+		free(meta->header);
+	}
+
+	free(meta);
+
+	return 0;
+}
+
+static int pci_enumerate(uint16_t segment, uint8_t bus) {
 	for (int i = 0; i < 256; i++) {
-		uint32_t vendor_device = pci_get_vendor_device(0, 0, i);
+		ARC_PCIHeaderMeta *meta = pci_get_mmio_header(segment, bus, i);
 
-		if (vendor_device == 0xFFFFFFFF) {
-			continue;
+		if (meta == NULL) {
+			meta = pci_read_header(0, 0, i);
 		}
 
-		ARC_PCIHeaderMeta *header = pci_get_mmio_header(0, 0, i);
+		switch (meta->header->common.header_type) {
+			case ARC_PCI_HEADER_DEVICE: {
+				init_pci_resource(meta);
+				break;
+			}
 
-		if (header == NULL) {
-			header = pci_read_header(0, 0, i);
+			case ARC_PCI_HEADER_PCI: {
+				// TODO: Implement this
+				ARC_DEBUG(WARN, "Found PCI-PCI bridge, definitely making use of it\n");
+				pci_free_header(meta);
+				break;
+			}
+
+			default: {
+				ARC_DEBUG(ERR, "Unaccounted for header type %d at (%d %d %d)\n", meta->header->common.header_type, segment, bus, i);
+				pci_free_header(meta);
+				break;
+			}
 		}
 
-		init_pci_resource(vendor_device, header);
 	}
 
 	return 0;
@@ -264,7 +276,7 @@ int init_pci() {
 		ARC_DEBUG(INFO, "Cannot setup memory mapped PCI access, trying to setup using I/O ports\n");
 	}
 
-	r = pci_enumerate();
+	r = pci_enumerate(0, 0);
 
 	if (r != 0) {
 		ARC_DEBUG(ERR, "Failed to initialize PCI\n");
