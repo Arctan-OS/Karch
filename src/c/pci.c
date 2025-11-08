@@ -33,6 +33,8 @@
 #include "mm/allocator.h"
 
 #define PCI_GET_FUNCTION_BASE(segment, bus, device, function)
+#define PCI_IO_CFG_ADDRESS 0xCF8
+#define PCI_IO_CFG_DATA    0xCFC
 
 static ARC_MCFGEntry *mcfg_space = NULL;
 static int mcfg_count = 0;
@@ -45,7 +47,8 @@ int pci_write(uint16_t segment, uint8_t bus, uint8_t device, uint8_t function, s
 			return -1;
 		}
 
-		void *base = (uint32_t *)ARC_PHYS_TO_HHDM(mcfg_space[segment].base + ((bus << 20) | (device << 15) | (function << 12)) + offset);
+		size_t off = ((bus << 20) | (device << 15) | (function << 12)) + offset;
+		void *base = (uint32_t *)ARC_PHYS_TO_HHDM(mcfg_space[segment].base + off);
 
 		switch (byte_width) {
 			case 1: {
@@ -63,20 +66,24 @@ int pci_write(uint16_t segment, uint8_t bus, uint8_t device, uint8_t function, s
 		}
 	}
 
-	uint32_t addr = (1 << 31) | (bus << 16) | ((device & 0b11111) << 11) | ((function & 0b111) << 8) | (offset & 0xFC);
-	outd(0xCF8, addr);
+	uint32_t addr = (1 << 31); // Enable
+	addr |= bus << 16;
+	addr |= (device & 0b11111) << 11;
+	addr |= (function &0b111) << 8;
+	addr |= (offset & 0xFC);
+	outd(PCI_IO_CFG_ADDRESS, addr);
 
 	switch (byte_width) {
 		case 1: {
-			outb(0xCFC + (offset & 0b11), (value & 0xFF));
+			outb(PCI_IO_CFG_DATA + (offset & 0b11), (value & 0xFF));
 			break;
 		}
 		case 2: {
-			outw(0xCFC + (offset & 0b10), (value & 0xFFFF));
+			outw(PCI_IO_CFG_DATA + (offset & 0b10), (value & 0xFFFF));
 			break;
 		}
 		case 4: {
-			outd(0xCFC, value);
+			outd(PCI_IO_CFG_DATA,  value);
 			break;
 		}
 	}
@@ -92,15 +99,20 @@ uint32_t pci_read(uint16_t segment, uint8_t bus, uint8_t device, uint8_t functio
 			return -1;
 		}
 
-		uint32_t *base = (uint32_t *)ARC_PHYS_TO_HHDM(mcfg_space[segment].base + ((bus << 20) | (device << 15) | (function << 12)) + offset);
+		uintptr_t off = ((bus << 20) | (device << 15) | (function << 12)) + offset;
+		uint32_t *base = (uint32_t *)ARC_PHYS_TO_HHDM(mcfg_space[segment].base + off);
 
 		return *base;
 	}
 
-	uint32_t addr = (1 << 31) | (bus << 16) | ((device & 0b11111) << 11) | ((function & 0b111) << 8) | (offset & 0xFC);
-	outd(0xCF8, addr);
+	uint32_t addr = (1 << 31); // Enable
+	addr |= bus << 16;
+	addr |= (device & 0b11111) << 11;
+	addr |= (function &0b111) << 8;
+	addr |= (offset & 0xFC);
+	outd(PCI_IO_CFG_ADDRESS, addr);
 
-	return ind(0xCFC);
+	return ind(PCI_IO_CFG_DATA);
 }
 
 uint16_t pci_get_status(uint16_t segment, uint8_t bus, uint8_t device) {
@@ -128,15 +140,51 @@ ARC_PCIHeader *pci_read_header(uint16_t segment, uint8_t bus, uint8_t device) {
 	}
 
 	header = (struct ARC_PCIHeader *)data;
+	header->info.segment = segment;
+	header->info.bus = bus;
+	header->info.device = device;
 
 	for (size_t i = sizeof(header->info); i < sizeof(*header); i += 4) {
 		data[i / 4] = pci_read(segment, bus, device, 0, i - 4);
 	}
 
-	header->info.call = segment | (bus << 16) | (device << 24);
-
 	return header;
 }
+
+int pci_write_header(ARC_PCIHeader *header) {
+	if (header == NULL) {
+		return -1;
+	}
+
+	uint32_t *data = (uint32_t *)header;
+	uint16_t segment = header->info.segment;
+	uint8_t bus = header->info.bus;
+	uint8_t device = header->info.device;
+
+	for (size_t i = sizeof(header->info); i < sizeof(*header); i += 4) {
+		pci_write(segment, bus, device, 0, i - 4, 4, data[i / 4]);
+	}
+
+	return 0;
+}
+
+ARC_PCIHeader *pci_get_mmio_header(uint16_t segment, uint8_t bus, uint8_t device) {
+	if (mcfg_count <= 0) {
+		return NULL;
+	}
+
+	// Use mcfg space
+	if (segment > mcfg_count) {
+		ARC_DEBUG(ERR, "Invalid segment %d\n", segment);
+		return NULL;
+	}
+
+	size_t off = ((bus << 20) | (device << 15) | (0 << 12));
+	void *base = (uint32_t *)ARC_PHYS_TO_HHDM(mcfg_space[segment].base + off);
+
+	return (ARC_PCIHeader *)base;
+}
+
 static int pci_enumerate() {
 	// TODO: Make this account for bridges
 
@@ -149,7 +197,7 @@ static int pci_enumerate() {
 
 		struct ARC_PCIHeader *header = pci_read_header(0, 0, i);
 
-		init_pci_resource(vendor_device & 0xFFFF, (vendor_device >> 16) & 0xFFFF, header);
+		init_pci_resource(vendor_device, header);
 	}
 
 	return 0;

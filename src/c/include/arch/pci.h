@@ -28,6 +28,7 @@
 #define ARC_ARCH_PCI_H
 
 #include "global.h"
+#include "util.h"
 
 #include <stdint.h>
 #include <stddef.h>
@@ -39,7 +40,23 @@
 #define ARC_MEMBAR_PREFETCHABLE(__bar) ((__bar >> 3) & 1)
 #define ARC_MEMBAR_ADDR(__bar) ((__bar >> 4) & 0xFFFFFFF)
 
-struct ARC_PCIHdrCommon {
+typedef union ARC_PCIBar {
+	uint8_t is_io : 1;
+	struct {
+		uint8_t is_io : 1;
+		uint8_t type : 2;
+		uint8_t prefetchable : 1;
+		uint32_t addr : 28;
+	} mem;
+	struct {
+		uint8_t is_io : 1;
+		uint8_t resv0 : 1;
+		uint32_t addr : 30;
+	} io;
+}__attribute__((packed)) ARC_PCIBar ;
+STATIC_ASSERT(sizeof(ARC_PCIBar) == 4, "PCI bar union of wrong length");
+
+typedef struct ARC_PCIHdrCommon {
 	uint16_t vendor_id;
 	uint16_t device_id;
 	uint16_t command;
@@ -52,11 +69,10 @@ struct ARC_PCIHdrCommon {
 	uint8_t latency;
 	uint8_t header_type;
 	uint8_t bist;
-}__attribute__((packed));
-STATIC_ASSERT(sizeof(struct ARC_PCIHdrCommon) == 0x10, "PCI Common Header wrong length");
+}__attribute__((packed)) ARC_PCIHdrCommon;
+STATIC_ASSERT(sizeof(ARC_PCIHdrCommon) == 0x10, "PCI Common Header wrong length");
 
-
-struct ARC_PCIHdr0 {
+typedef struct ARC_PCIHdrDevice {
 	uint32_t bar0;
 	uint32_t bar1;
 	uint32_t bar2;
@@ -74,10 +90,10 @@ struct ARC_PCIHdr0 {
 	uint8_t interrupt_pin;
 	uint8_t mint_grant;
 	uint8_t max_latency;
-}__attribute__((packed));
-STATIC_ASSERT(sizeof(struct ARC_PCIHdr0) == 0x30, "PCI Header 0 wrong length");
+}__attribute__((packed)) ARC_PCIHdrDevice;
+STATIC_ASSERT(sizeof(ARC_PCIHdrDevice) == 0x30, "PCI Header 0 wrong length");
 
-struct ARC_PCIHdr1 {
+typedef struct ARC_PCIHdrPCI {
 	uint32_t bar0;
 	uint32_t bar1;
 	uint8_t primary_bus;
@@ -101,10 +117,10 @@ struct ARC_PCIHdr1 {
 	uint8_t interrupt_line;
 	uint8_t interrupt_pin;
 	uint16_t bridge_ctrl;
-}__attribute__((packed));
-STATIC_ASSERT(sizeof(struct ARC_PCIHdr1) == 0x30, "PCI Header 1 wrong length");
+}__attribute__((packed)) ARC_PCIHdrPCI;
+STATIC_ASSERT(sizeof(ARC_PCIHdrPCI) == 0x30, "PCI Header 1 wrong length");
 
-struct ARC_PCIHdr2 {
+typedef struct ARC_PCIHdrCanbus {
 	uint32_t carbus_exca_base;
 	uint8_t caps_list_off;
 	uint8_t resv0;
@@ -127,21 +143,21 @@ struct ARC_PCIHdr2 {
 	uint16_t subsys_device;
 	uint16_t subsys_vendor;
 	uint32_t legacy_mode_base;
-}__attribute__((packed));
-STATIC_ASSERT(sizeof(struct ARC_PCIHdr2) == 0x38, "PCI Header 2 wrong length");
+}__attribute__((packed)) ARC_PCIHdrCanbus;
+STATIC_ASSERT(sizeof(ARC_PCIHdrCanbus) == 0x38, "PCI Header 2 wrong length");
 
 typedef struct ARC_PCIHeader {
 	struct {
-		uint32_t call; // 15:0 - Bus segment
-			       // 23:16 - Bus
-			       // 31:24 - Device
+		uint16_t segment;
+		uint8_t bus;
+		uint8_t device;
 	} info;
 	struct ARC_PCIHdrCommon common;
 	union {
-		struct ARC_PCIHdr0 header0;
-		struct ARC_PCIHdr1 header1;
-		struct ARC_PCIHdr2 header2;
-	} headers;
+		ARC_PCIHdrDevice device;
+		ARC_PCIHdrPCI pci_pci;
+		ARC_PCIHdrCanbus pci_canbus;
+	} s; // Specific
 }__attribute__((packed)) ARC_PCIHeader;
 
 int pci_write(uint16_t segment, uint8_t bus, uint8_t device, uint8_t function, size_t offset, uint8_t byte_width, uint32_t value);
