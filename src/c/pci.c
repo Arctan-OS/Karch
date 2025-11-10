@@ -215,38 +215,56 @@ int pci_free_header(ARC_PCIHeaderMeta *meta) {
 }
 
 static int pci_enumerate(uint16_t segment, uint8_t bus) {
+	bool multi_func = false;
+
 	for (int i = 0; i < 256; i++) {
 		ARC_PCIHeaderMeta *meta = pci_get_mmio_header(segment, bus, i);
 
 		if (meta == NULL) {
-			meta = pci_read_header(0, 0, i);
+			meta = pci_read_header(segment, bus, i);
 		}
 
-		switch (meta->header->common.header_type) {
+		if (meta == NULL) {
+			return -1;
+		}
+
+		uint8_t type = meta->header->common.header_type;
+		if (i == 0) {
+			multi_func = (type >> 7) & 1;
+		}
+		type &= ~0x80;
+
+		switch (type) {
 			case ARC_PCI_HEADER_DEVICE: {
 				init_pci_resource(meta);
 				break;
 			}
 
 			case ARC_PCI_HEADER_PCI: {
-				// TODO: Implement this
-				ARC_DEBUG(WARN, "Found PCI-PCI bridge, definitely making use of it\n");
-				pci_free_header(meta);
+				uint8_t secondary = meta->header->s.pci_pci.secondary_bus;
+				pci_enumerate(segment, secondary);
+				// TODO: Insert header into some sort of list
+				// TODO: This could also be made into a device such that
+				//       it can be configured using a driver in which case,
+				//       granted careful ordering, the above case of
+				//       ARC_PCI_HEADER_DEVICE could continue execution
+				//       down to here
 				break;
 			}
 
 			default: {
-				ARC_DEBUG(ERR, "Unaccounted for header type %d at (%d %d %d)\n", meta->header->common.header_type, segment, bus, i);
+				ARC_DEBUG(ERR, "Unaccounted for header type %d at (%d %d %d)\n", type, segment, bus, i);
 				pci_free_header(meta);
 				break;
 			}
 		}
-
 	}
 
-	return 0;
+	return multi_func;
 }
 
+// NOTE: This relies on ACPI setting up MCFG space entries
+//       from least to greatest
 static int setup_mcfg() {
 	ARC_MCFGIterator it = NULL;
 
@@ -255,15 +273,10 @@ static int setup_mcfg() {
 			mcfg_space = it;
 		}
 
-		ARC_DEBUG(INFO, "Configuration Space %d: Base: 0x%"PRIx64" Group: %d Buses: [%d %d]\n", mcfg_count, it->base, it->seg_group, it->start_bus, it->end_bus);
+		ARC_DEBUG(INFO, "Configuration Space %d: Base: 0x%"PRIx64" Group: %d Buses: [%d, %d]\n", mcfg_count, it->base, it->seg_group, it->start_bus, it->end_bus);
 		mcfg_count++;
 	}
 
-	return 0;
-}
-
-int setup_io() {
-	ARC_DEBUG(ERR, "Definitely setting up the IO stuff\n");
 	return 0;
 }
 
@@ -276,7 +289,9 @@ int init_pci() {
 		ARC_DEBUG(INFO, "Cannot setup memory mapped PCI access, trying to setup using I/O ports\n");
 	}
 
-	r = pci_enumerate(0, 0);
+	// TODO: Figure out how to handle case if there are
+	//       multiple PCI host controllers
+	pci_enumerate(0, 0);
 
 	if (r != 0) {
 		ARC_DEBUG(ERR, "Failed to initialize PCI\n");
