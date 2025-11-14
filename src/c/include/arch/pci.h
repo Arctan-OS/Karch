@@ -160,6 +160,7 @@ typedef struct ARC_PCIHeaderMeta {
 	uint16_t segment;
 	uint8_t bus;
 	uint8_t device;
+	uint8_t function;
 	bool is_mmio;
 	ARC_PCIHeader *header;
 } ARC_PCIHeaderMeta;
@@ -173,9 +174,9 @@ enum {
 int pci_write(uint16_t segment, uint8_t bus, uint8_t device, uint8_t function, size_t offset, uint8_t byte_width, uint32_t value);
 uint32_t pci_read(uint16_t segment, uint8_t bus, uint8_t device, uint8_t function, size_t offset);
 
-ARC_PCIHeaderMeta *pci_read_header(uint16_t segment, uint8_t bus, uint8_t device);
+ARC_PCIHeaderMeta *pci_read_header(uint16_t segment, uint8_t bus, uint8_t device, uint8_t function);
 int pci_write_header(ARC_PCIHeaderMeta *header);
-ARC_PCIHeaderMeta *pci_get_mmio_header(uint16_t segment, uint8_t bus, uint8_t device);
+ARC_PCIHeaderMeta *pci_get_mmio_header(uint16_t segment, uint8_t bus, uint8_t device, uint8_t function);
 int pci_free_header(ARC_PCIHeaderMeta *meta) ;
 
 int init_pci();
